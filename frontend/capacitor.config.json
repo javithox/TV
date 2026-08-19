@@ -1,0 +1,13 @@
+{
+  "appId": "com.pktv.app",
+  "appName": "PK TV",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "android": {
+    "backgroundColor": "#080b12",
+    "allowMixedContent": false
+  },
+  "server": {
+    "cleartext": false
+  }
+}
