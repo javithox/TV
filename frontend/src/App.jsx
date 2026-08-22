@@ -1,66 +1,96 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import ReactPlayer from 'react-player';
-import { getListas } from './services/api';
-import { parseM3U } from './utils/m3uParser';
+import { getListas } from './services/api'; // <--- Cambiado a getListas
+import './App.css';
 
 function App() {
   const [channels, setChannels] = useState([]);
   const [selectedChannel, setSelectedChannel] = useState(null);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState('');
+  const activeBtnRef = useRef(null);
 
   useEffect(() => {
-    async function loadChannels() {
-      try {
-        const m3uData = await getListas();
-        const parsedChannels = parseM3U(m3uData);
-        setChannels(parsedChannels);
-        if (parsedChannels.length > 0) {
-          setSelectedChannel(parsedChannels[0]);
+    // Llamamos directamente a getListas() que descarga y parsea el M3U
+    getListas()
+      .then((items) => {
+        if (!items || items.length === 0) {
+          setError('La lista M3U está vacía o el token es incorrecto.');
+          return;
         }
-      } catch (err) {
-        console.error('No se pudieron cargar los canales');
-      }
-    }
-    loadChannels();
+        setChannels(items);
+        setSelectedChannel(items[0]);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError('No se pudieron cargar los canales. Verifica el token o el servidor.');
+      });
   }, []);
 
-  return (
-    <div style={{ display: 'flex', fontFamily: 'sans-serif', padding: '20px' }}>
-      {/* Panel izquierdo: Lista de reproducciones */}
-      <div style={{ width: '30%', borderRight: '1px solid #ccc', paddingRight: '15px' }}>
-        <h2>Lista PK TV</h2>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {channels.map((channel, idx) => (
-            <li
-              key={idx}
-              onClick={() => setSelectedChannel(channel)}
-              style={{
-                padding: '10px',
-                cursor: 'pointer',
-                backgroundColor: selectedChannel === channel ? '#007bff' : '#f0f0f0',
-                color: selectedChannel === channel ? '#fff' : '#000',
-                marginBottom: '5px',
-                borderRadius: '4px'
-              }}
-            >
-              {channel.title}
-            </li>
-          ))}
-        </ul>
-      </div>
+  const filtered = useMemo(
+    () => channels.filter(c => c.title.toLowerCase().includes(query.toLowerCase())),
+    [channels, query]
+  );
 
-      {/* Panel derecho: Reproductor de Video */}
-      <div style={{ width: '70%', paddingLeft: '20px' }}>
-        <h2>{selectedChannel ? selectedChannel.title : 'Selecciona un canal'}</h2>
-        {selectedChannel && (
-          <ReactPlayer
-            url={selectedChannel.url}
-            controls
-            playing
-            width="100%"
-            height="480px"
-          />
-        )}
-      </div>
+  const handleFocus = (e) => {
+    e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+
+  return (
+    <div className="app-container">
+      <aside className="sidebar">
+        <h2>PK TV</h2>
+        <input
+          className="search-input focusable"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Buscar canal..."
+        />
+        
+        {error && <p className="error-msg">{error}</p>}
+
+        <div className="channel-list">
+          {filtered.map(channel => {
+            const isSelected = selectedChannel?.id === channel.id;
+            return (
+              <button
+                key={channel.id}
+                ref={isSelected ? activeBtnRef : null}
+                onClick={() => setSelectedChannel(channel)}
+                onFocus={handleFocus}
+                className={`channel-btn focusable ${isSelected ? 'active' : ''}`}
+              >
+                {channel.title}
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      <main className="main-content">
+        <h3 className="player-title">
+          {selectedChannel?.title || 'Selecciona un canal'}
+        </h3>
+        
+        <div className="player-wrapper">
+          {selectedChannel ? (
+            <ReactPlayer
+              url={selectedChannel.playbackUrl || selectedChannel.url}
+              controls
+              playing
+              width="100%"
+              height="100%"
+              config={{
+                file: {
+                  forceHLS: true
+                }
+              }}
+            />
+          ) : (
+            <p style={{ color: 'var(--text-muted)' }}>Sin señal seleccionada</p>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

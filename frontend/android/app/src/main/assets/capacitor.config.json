@@ -1,0 +1,9 @@
+{
+	"appId": "com.pktv.app",
+	"appName": "PK TV",
+	"webDir": "dist",
+	"bundledWebRuntime": false,
+	"server": {
+		"cleartext": false
+	}
+}

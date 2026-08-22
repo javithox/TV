@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_TOKEN = import.meta.env.VITE_USER_TOKEN || 'token-secreto-123';
+const USER_TOKEN = import.meta.env.VITE_USER_TOKEN || 'tv_chile_2026_token_seguro_8f4Kp92x';
 
 export const getListas = async () => {
   try {

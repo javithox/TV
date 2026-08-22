@@ -7,9 +7,9 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const USER_TOKEN = process.env.USER_TOKEN || 'token-secreto-123';
+const USER_TOKEN = process.env.USER_TOKEN || 'tv_chile_2026_token_seguro_8f4Kp92x';
 
-const M3U_FUENTES = (process.env.M3U_URLS || 'https://m3u.cl/lista/CL.m3u,./lista/dragonball.m3u')
+const M3U_FUENTES = (process.env.M3U_URLS || 'https://m3u.cl/lista/CL.m3u')
     .split(',')
     .map(fuente => fuente.trim());
 
