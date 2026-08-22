@@ -38,7 +38,7 @@
     .title { font-size: 26px; font-weight: 800; text-shadow: 0 2px 6px #000; }
     .current-channel { margin-left: 10px; color: #c5c7cc; font-size: 18px; text-shadow: 0 2px 5px #000; }
 
-    /* Botones y Foco para TV (Estilos resaltados) */
+    /* Botones y Foco para TV */
     .icon-btn {
       display: inline-grid; place-items: center; width: 50px; height: 50px; flex: 0 0 50px;
       padding: 0; border: 2px solid transparent; border-radius: 12px;
@@ -74,7 +74,7 @@
     
     .sidebar {
       position: fixed; inset: 0 auto 0 0; z-index: 100;
-      display: flex; flex-direction: column; width: 420px; height: 100vh;
+      display: flex; flex-direction: column; width: 440px; height: 100vh;
       background: #111318; box-shadow: 10px 0 40px rgba(0,0,0,.8);
       transform: translateX(-100%); transition: transform .25s cubic-bezier(.2,.75,.25,1);
     }
@@ -87,6 +87,22 @@
     .search-box input {
       width: 100%; height: 50px; padding: 0 15px; border: 2px solid #393d48;
       border-radius: 12px; background: #242730; color: #fff; font-size: 18px; outline: 0;
+    }
+
+    /* BARRA DE CATEGORÍAS */
+    .categories-bar {
+      display: flex; gap: 8px; overflow-x: auto; padding: 5px 20px 10px;
+      scrollbar-width: none; white-space: nowrap; flex-shrink: 0;
+    }
+    .categories-bar::-webkit-scrollbar { display: none; }
+    
+    .category-btn {
+      padding: 8px 16px; border-radius: 20px; border: 1px solid #393d48;
+      background: #1c1f26; color: #c5c7cc; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .category-btn.active {
+      background: var(--red); color: #fff; border-color: var(--red);
     }
 
     .channel-count { padding: 0 20px 10px; color: var(--muted); font-size: 14px; }
@@ -128,9 +144,14 @@
         <div class="sidebar-title">Canales TV</div>
         <button id="closeBtn" class="icon-btn close-btn focusable" type="button">×</button>
       </div>
+
       <div class="search-box">
         <input id="searchInput" class="focusable" type="search" placeholder="Buscar canal..." autocomplete="off">
       </div>
+
+      <!-- Contenedor dinámico de Categorías -->
+      <div id="categoriesBar" class="categories-bar"></div>
+
       <div id="channelCount" class="channel-count">Cargando...</div>
       <div id="channelList" class="channel-list"></div>
     </aside>
@@ -143,6 +164,7 @@
     let hls = null;
     let canales = [];
     let canalActual = null;
+    let categoriaSeleccionada = "TODOS";
 
     const $ = (id) => document.getElementById(id);
     const video = $("video");
@@ -151,12 +173,12 @@
     const menuBtn = $("menuBtn");
     const closeBtn = $("closeBtn");
     const searchInput = $("searchInput");
+    const categoriesBar = $("categoriesBar");
     const channelList = $("channelList");
     const channelCount = $("channelCount");
     const status = $("status");
     const currentChannel = $("currentChannel");
 
-    // Iniciar foco por defecto al cargar en la TV
     window.addEventListener("DOMContentLoaded", () => {
       menuBtn.focus();
     });
@@ -164,7 +186,6 @@
     function abrirPanel() {
       sidebar.classList.add("open");
       overlay.classList.add("show");
-      // Enfoque inmediato en el buscador o en el primer canal
       setTimeout(() => searchInput.focus(), 100);
     }
 
@@ -178,17 +199,13 @@
     closeBtn.addEventListener("click", cerrarPanel);
     overlay.addEventListener("click", cerrarPanel);
 
-    // Gestor global de teclado / Control Remoto (D-Pad)
     document.addEventListener("keydown", (e) => {
-      // Tecla Volver / Atrás (MANDOS TV: Backspace, Escape, 10009 en Tizen/WebOS, 27)
       if (e.key === "Escape" || e.key === "Backspace" || e.keyCode === 10009 || e.keyCode === 27) {
         if (sidebar.classList.contains("open")) {
           e.preventDefault();
           cerrarPanel();
         }
       }
-
-      // Abrir menú con la tecla OK o Enter si no hay nada enfocado
       if (e.key === "Enter" && document.activeElement === document.body) {
         menuBtn.focus();
       }
@@ -211,15 +228,52 @@
           const metadata = coma >= 0 ? linea.slice(0, coma) : linea;
           info.nombre = coma >= 0 ? linea.slice(coma + 1).trim() : "Canal sin nombre";
           info.logo = metadata.match(/tvg-logo="([^"]*)"/i)?.[1] || "";
-          info.grupo = metadata.match(/group-title="([^"]*)"/i)?.[1] || "Otros";
+          info.grupo = metadata.match(/group-title="([^"]*)"/i)?.[1] || "VARIOS";
           continue;
         }
         if (/^https?:\/\//i.test(linea)) {
-          resultado.push({ nombre: info.nombre || `Canal ${resultado.length + 1}`, logo: info.logo || "", grupo: info.grupo || "Otros", url: linea });
+          resultado.push({ 
+            nombre: info.nombre || `Canal ${resultado.length + 1}`, 
+            logo: info.logo || "", 
+            grupo: info.grupo ? info.grupo.trim().toUpperCase() : "VARIOS", 
+            url: linea 
+          });
           info = {};
         }
       }
       return resultado;
+    }
+
+    // Renderiza los botones de categorías dinámicamente
+    function renderCategorias() {
+      categoriesBar.replaceChildren();
+
+      const grupos = Array.from(new Set(canales.map(c => c.grupo))).sort();
+      const listaCategorias = ["TODOS", ...grupos];
+
+      const fragment = document.createDocumentFragment();
+
+      listaCategorias.forEach((cat) => {
+        const btn = document.createElement("button");
+        btn.className = `category-btn focusable ${categoriaSeleccionada === cat ? "active" : ""}`;
+        btn.type = "button";
+        btn.textContent = cat;
+
+        btn.addEventListener("focus", () => {
+          btn.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+        });
+
+        btn.addEventListener("click", () => {
+          categoriaSeleccionada = cat;
+          document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          renderCanales(filtrarCanalesActuales());
+        });
+
+        fragment.appendChild(btn);
+      });
+
+      categoriesBar.appendChild(fragment);
     }
 
     function renderCanales(lista) {
@@ -248,7 +302,6 @@
         name.textContent = canal.nombre;
         button.appendChild(name);
 
-        // Al enfocar con la flecha del control, scroll automático
         button.addEventListener("focus", () => {
           button.scrollIntoView({ block: "nearest", behavior: "smooth" });
         });
@@ -266,16 +319,23 @@
       return logo;
     }
 
-    // Buscador con Debounce para Smart TV
     let searchTimeout;
     searchInput.addEventListener("input", () => {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        const termino = searchInput.value.toLocaleLowerCase("es").trim();
-        const resultados = termino ? canales.filter((canal) => `${canal.nombre} ${canal.grupo}`.toLocaleLowerCase("es").includes(termino)) : canales;
-        renderCanales(resultados);
+        renderCanales(filtrarCanalesActuales());
       }, 200);
     });
+
+    // Filtra aplicando categoría Y texto del buscador al mismo tiempo
+    function filtrarCanalesActuales() {
+      const termino = searchInput.value.toLocaleLowerCase("es").trim();
+      return canales.filter((canal) => {
+        const coincideCategoria = (categoriaSeleccionada === "TODOS") || (canal.grupo === categoriaSeleccionada);
+        const coincideTexto = !termino || `${canal.nombre} ${canal.grupo}`.toLocaleLowerCase("es").includes(termino);
+        return coincideCategoria && coincideTexto;
+      });
+    }
 
     async function cargarPlaylist() {
       mostrarEstado("Cargando canales...");
@@ -283,7 +343,10 @@
         const response = await fetch(PLAYLIST_URL, { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         canales = parsearM3U(await response.text());
+        
+        renderCategorias();
         renderCanales(canales);
+
         if (!canales.length) { mostrarEstado("No se encontraron canales", true); return; }
         mostrarEstado(`${canales.length} canales listos`);
         reproducirCanal(canales[0]);
@@ -331,11 +394,6 @@
         return;
       }
       mostrarEstado("El navegador no soporta HLS.", true);
-    }
-
-    function filtrarCanalesActuales() {
-      const termino = searchInput.value.toLocaleLowerCase("es").trim();
-      return termino ? canales.filter((canal) => `${canal.nombre} ${canal.grupo}`.toLocaleLowerCase("es").includes(termino)) : canales;
     }
 
     video.addEventListener("playing", () => mostrarEstado("Reproduciendo", false, true));
