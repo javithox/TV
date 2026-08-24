@@ -34,7 +34,14 @@
 </head>
 <body>
   <main class="app" id="app">
-    <div class="video-container"><video id="video" playsinline preload="metadata"></video></div>
+    <div class="video-container"><video id="video" playsinline webkit-playsinline preload="metadata"></video>
+
+<button id="fullscreenBtn"
+        class="fullscreen-btn focusable"
+        type="button"
+        aria-label="Pantalla completa">
+  ⛶
+</button></video></div>
     <header class="topbar">
       <button id="menuBtn" class="icon focusable" type="button" aria-label="Abrir canales"><span class="menu"></span></button>
       <div class="brand">PK TV <small>LIVE</small></div><div id="current" class="current"></div><div class="live"><i></i> EN VIVO</div>
