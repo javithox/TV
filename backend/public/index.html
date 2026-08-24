@@ -353,7 +353,7 @@
         <div id="screen-placeholder" class="screen-placeholder"></div>
         <div id="screen-wrapper" class="screen-wrapper">
           <div class="screen-header">
-            <span class="channel-badge" id="channel-title">Cargando canales...</span>
+            <span class="channel-badge" id="channel-title">Cargando canales desde el servidor...</span>
             <div class="live-badge">
               <span class="live-dot"></span> LIVE
             </div>
@@ -376,9 +376,9 @@
   </div>
 
   <script type="module">
+    const API_URL = import.meta.env.VITE_API_URL || 'https://tv-8pxs.onrender.com';
+    const USER_TOKEN = import.meta.env.VITE_USER_TOKEN || 'tv_chile_2026_token_seguro_8f4Kp92x';
 
-    const PLAYLIST_URL =
-  '/playlist/tv_chile_2026_token_seguro_8f4Kp92x.m3u';
     const video = document.getElementById('video');
     const screenWrapper = document.getElementById('screen-wrapper');
     const screenPlaceholder = document.getElementById('screen-placeholder');
@@ -393,80 +393,41 @@
     let activeChannelId = null;
     let selectedCategory = "Todos";
 
-    // 1. Parser M3U
-    function parseM3U(content) {
-      const lines = content.split('\n');
-      const parsedChannels = [];
-      let currentChannel = {};
-
-      lines.forEach(line => {
-        line = line.trim();
-        if (line.startsWith('#EXTINF:')) {
-          const nameMatch = line.match(/,(.+)$/);
-          const name = nameMatch ? nameMatch[1].trim() : 'Canal sin nombre';
-
-          const groupMatch = line.match(/group-title="([^"]+)"/i);
-          const category = groupMatch ? groupMatch[1].trim() : 'General';
-
-          const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
-          const logo = logoMatch ? logoMatch[1] : null;
-
-          currentChannel = {
-            name,
-            category,
-            icon: logo ? `<img src="${logo}" alt="logo" onerror="this.src=''; this.parentElement.innerHTML='📺'"/>` : '📺'
-          };
-        } else if (line.startsWith('http')) {
-          if (currentChannel.name) {
-            currentChannel.id = Math.random().toString(36).substr(2, 9);
-            currentChannel.url = line;
-            parsedChannels.push({ ...currentChannel });
-            currentChannel = {};
-          }
-        }
-      });
-
-      return parsedChannels;
-    }
-
-    // 2. Cargar variables de entorno y listas M3U
+    // Cargar canales desde la API en Render
     async function initApp() {
-      const rawUrls = import.meta.env.VITE_M3U_URLS || "";
-      const m3uUrls = rawUrls.split(',').map(url => url.trim()).filter(Boolean);
+      try {
+        channelTitle.textContent = "Cargando canales...";
 
-      if (m3uUrls.length === 0) {
-        channelTitle.textContent = "Sin canales configurados";
-        return;
-      }
-
-      const results = await Promise.all(
-        m3uUrls.map(async (url) => {
-          try {
-            const res = await fetch(url);
-            if (!res.ok) return [];
-            const text = await res.text();
-            return parseM3U(text);
-          } catch (e) {
-            console.error(`Error al cargar M3U desde ${url}:`, e);
-            return [];
+        const res = await fetch(`${API_URL}/api/channels`, {
+          headers: {
+            'Authorization': `Bearer ${USER_TOKEN}`,
+            'Content-Type': 'application/json'
           }
-        })
-      );
+        });
 
-      channels = results.flat();
+        if (!res.ok) {
+          throw new Error(`Error en la petición: ${res.status}`);
+        }
 
-      if (channels.length > 0) {
-        buildCategoryTabs();
-        activeChannelId = channels[0].id;
-        channelTitle.textContent = channels[0].name;
-        loadStream(channels[0].url);
-        renderChannels();
-      } else {
-        channelTitle.textContent = "Error al cargar canales M3U";
+        const data = await res.json();
+        channels = data.channels || [];
+
+        if (channels.length > 0) {
+          buildCategoryTabs();
+          activeChannelId = channels[0].id;
+          channelTitle.textContent = channels[0].name;
+          loadStream(channels[0].url);
+          renderChannels();
+        } else {
+          channelTitle.textContent = "No se encontraron canales válidos";
+        }
+      } catch (e) {
+        console.error("Error al conectar con Render:", e);
+        channelTitle.textContent = "Error al cargar canales desde el servidor";
       }
     }
 
-    // 3. Generar pestañas de categorías automáticamente
+    // Generar pestañas de categorías
     function buildCategoryTabs() {
       const categories = ['Todos', ...new Set(channels.map(c => c.category))];
       categoryTabs.innerHTML = categories.slice(0, 10).map(cat => 
@@ -474,7 +435,7 @@
       ).join('');
     }
 
-    // 4. Reproductor HLS
+    // Reproductor HLS
     function loadStream(url) {
       if (Hls.isSupported()) {
         if (hlsInstance) hlsInstance.destroy();
@@ -488,7 +449,7 @@
       }
     }
 
-    // 5. Renderizar lista de canales
+    // Renderizar lista de canales
     function renderChannels() {
       const query = searchInput.value.toLowerCase();
       channelGrid.innerHTML = '';
@@ -564,7 +525,7 @@
 
     searchInput.addEventListener('input', renderChannels);
 
-    // Inicializar
+    // Inicializar aplicación
     initApp();
   </script>
 
