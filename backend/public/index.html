@@ -5,111 +5,2025 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#08090d">
   <title>PK TV — Estilos IPTV</title>
+
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
   <style>
+    :root {
+      --accent:#e50914;
+      --accent-2:#ff4752;
+      --bg:#07080b;
+      --panel:rgba(17,19,24,.96);
+      --panel-2:#242730;
+      --text:#f7f7f8;
+      --muted:#a5a8b1;
+      --line:rgba(255,255,255,.13);
+      --radius:14px;
+      --shadow:0 20px 60px rgba(0,0,0,.55);
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    }
+
+    [data-theme="glass"] {
+      --accent:#765cff;
+      --accent-2:#a895ff;
+      --bg:#070a14;
+      --panel:rgba(21,28,50,.72);
+      --panel-2:rgba(93,110,165,.34);
+      --line:rgba(255,255,255,.18);
+      --radius:20px;
+      --shadow:0 20px 70px rgba(32,22,100,.35);
+    }
+
+    [data-theme="tv"] {
+      --accent:#1385ff;
+      --accent-2:#65b5ff;
+      --bg:#0e1014;
+      --panel:#1b1e24;
+      --panel-2:#30353e;
+      --radius:7px;
+      --shadow:10px 0 45px rgba(0,0,0,.7);
+    }
+
+    [data-theme="anime"] {
+      --accent:#ff2d8d;
+      --accent-2:#ff91c3;
+      --bg:#090511;
+      --panel:rgba(28,13,45,.97);
+      --panel-2:#39145b;
+      --line:rgba(255,45,141,.3);
+      --radius:17px;
+      --shadow:0 20px 70px rgba(255,45,141,.18);
+    }
+
+    [data-theme="light"] {
+      --accent:#1769e0;
+      --accent-2:#0d4da8;
+      --bg:#e3e8ef;
+      --panel:rgba(255,255,255,.97);
+      --panel-2:#eef2f7;
+      --text:#172033;
+      --muted:#657086;
+      --line:#d5dce6;
+      --shadow:0 20px 55px rgba(35,52,75,.22);
+    }
+
+    * {
+      box-sizing:border-box;
+    }
+
+    html,
+    body {
+      width:100%;
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    button,
+    input,
+    select {
+      font:inherit;
+    }
+
+    .app {
+      position:relative;
+      width:100vw;
+      height:100dvh;
+      overflow:hidden;
+
+      background:
+        radial-gradient(
+          circle at 72% 40%,
+          color-mix(in srgb,var(--accent) 18%,transparent),
+          transparent 35%
+        ),
+        var(--bg);
+    }
+
+    /* =========================
+       REPRODUCTOR
+       ========================= */
+
+    .video-container {
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      background:#000;
+    }
+
+    video {
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      background:#000;
+    }
+
+    /* =========================
+       BOTON FULLSCREEN
+       ========================= */
+
     .fullscreen-btn {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  z-index: 30;
+      position:absolute;
+      right:clamp(16px,3vw,42px);
+      bottom:clamp(18px,4vh,42px);
 
-  width: 50px;
-  height: 50px;
+      z-index:30;
 
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 12px;
+      display:grid;
+      place-items:center;
 
-  background: rgba(0,0,0,.72);
-  color: #fff;
+      width:48px;
+      height:48px;
 
-  font-size: 27px;
-  line-height: 1;
+      padding:0;
 
-  cursor: pointer;
-  backdrop-filter: blur(8px);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
 
-  transition:
-    transform .2s,
-    background .2s,
-    opacity .2s;
-}
+      background:color-mix(
+        in srgb,
+        var(--panel-2) 85%,
+        transparent
+      );
 
-.fullscreen-btn:hover {
-  background: rgba(0,0,0,.9);
-  transform: scale(1.05);
-}
+      color:var(--text);
 
-.fullscreen-btn:active {
-  transform: scale(.95);
-}
+      font-size:25px;
+      line-height:1;
 
-/* Cuando el reproductor está en pantalla completa */
-.video-container:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  background: #000;
-}
+      cursor:pointer;
 
-.video-container:-webkit-full-screen {
-  width: 100vw;
-  height: 100vh;
-  background: #000;
-}
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
 
-.video-container:fullscreen video,
-.video-container:-webkit-full-screen video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
+      box-shadow:0 8px 25px rgba(0,0,0,.35);
 
-@media (max-width: 700px) {
-  .fullscreen-btn {
-    right: 12px;
-    bottom: 12px;
-    width: 46px;
-    height: 46px;
-  }
-}
+      transition:
+        transform .2s,
+        background .2s,
+        border-color .2s,
+        box-shadow .2s;
+    }
+
+    .fullscreen-btn:hover {
+      transform:translateY(-2px);
+
+      background:var(--panel-2);
+
+      border-color:var(--accent);
+
+      box-shadow:
+        0 8px 30px rgba(0,0,0,.45),
+        0 0 15px color-mix(
+          in srgb,
+          var(--accent) 30%,
+          transparent
+        );
+    }
+
+    .fullscreen-btn:active {
+      transform:scale(.94);
+    }
+
+    /* Pantalla completa */
+
+    .video-container:fullscreen {
+      width:100vw;
+      height:100vh;
+      background:#000;
+    }
+
+    .video-container:-webkit-full-screen {
+      width:100vw;
+      height:100vh;
+      background:#000;
+    }
+
+    .video-container:fullscreen video,
+    .video-container:-webkit-full-screen video {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+
+    .video-container:fullscreen .fullscreen-btn,
+    .video-container:-webkit-full-screen .fullscreen-btn {
+      z-index:9999;
+    }
+
+    /* =========================
+       BARRA SUPERIOR
+       ========================= */
+
+    .topbar {
+      position:absolute;
+      inset:0 0 auto;
+
+      z-index:20;
+
+      display:flex;
+      align-items:center;
+      gap:14px;
+
+      min-height:82px;
+
+      padding:18px clamp(16px,3vw,42px);
+
+      background:
+        linear-gradient(
+          180deg,
+          rgba(0,0,0,.94),
+          transparent
+        );
+
+      pointer-events:none;
+    }
+
+    .topbar > * {
+      pointer-events:auto;
+    }
+
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:8px;
+
+      font-size:clamp(20px,2vw,28px);
+      font-weight:900;
+
+      letter-spacing:-.06em;
+
+      text-shadow:0 2px 8px #000;
+    }
+
+    .brand small {
+      padding:3px 6px;
+
+      border-radius:4px;
+
+      background:var(--accent);
+
+      color:#fff;
+
+      font-size:9px;
+      letter-spacing:.12em;
+    }
+
+    .current {
+      max-width:42vw;
+
+      overflow:hidden;
+
+      color:#c9cbd1;
+
+      font-size:clamp(13px,1.4vw,18px);
+
+      text-overflow:ellipsis;
+      white-space:nowrap;
+
+      text-shadow:0 2px 6px #000;
+    }
+
+    .live {
+      display:flex;
+      align-items:center;
+      gap:7px;
+
+      margin-left:auto;
+
+      color:#d3d5dc;
+
+      font-size:11px;
+      font-weight:800;
+
+      letter-spacing:.1em;
+    }
+
+    .live i,
+    .status i {
+      width:7px;
+      height:7px;
+
+      border-radius:50%;
+
+      background:#35d07f;
+
+      box-shadow:0 0 10px #35d07f;
+    }
+
+    /* =========================
+       ICONOS
+       ========================= */
+
+    .icon {
+      display:grid;
+      place-items:center;
+
+      width:48px;
+      height:48px;
+
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+
+      background:
+        color-mix(
+          in srgb,
+          var(--panel-2) 85%,
+          transparent
+        );
+
+      color:var(--text);
+
+      cursor:pointer;
+
+      transition:
+        transform .2s,
+        background .2s;
+    }
+
+    .icon:hover {
+      transform:translateY(-2px);
+      background:var(--panel-2);
+    }
+
+    .menu {
+      position:relative;
+
+      width:21px;
+      height:15px;
+
+      border-top:2px solid currentColor;
+      border-bottom:2px solid currentColor;
+    }
+
+    .menu:after {
+      content:"";
+
+      position:absolute;
+
+      inset:5px 0 auto;
+
+      border-top:2px solid currentColor;
+    }
+
+    /* =========================
+       STATUS
+       ========================= */
+
+    .status {
+      position:absolute;
+
+      left:50%;
+      bottom:clamp(24px,5vh,58px);
+
+      z-index:15;
+
+      display:flex;
+      align-items:center;
+      gap:9px;
+
+      max-width:calc(100% - 32px);
+
+      padding:10px 17px;
+
+      border:1px solid var(--line);
+      border-radius:999px;
+
+      background:rgba(0,0,0,.78);
+
+      color:#ddd;
+
+      font-size:13px;
+
+      transform:translateX(-50%);
+
+      transition:
+        opacity .3s,
+        transform .3s;
+
+      pointer-events:none;
+    }
+
+    .status.hidden {
+      opacity:0;
+      transform:translate(-50%,10px);
+    }
+
+    .status.error {
+      color:#ff98a0;
+    }
+
+    .status.error i {
+      background:var(--accent);
+      box-shadow:0 0 10px var(--accent);
+    }
+
+    /* =========================
+       OVERLAY
+       ========================= */
+
+    .overlay {
+      position:fixed;
+      inset:0;
+
+      z-index:90;
+
+      background:rgba(0,0,0,.72);
+
+      opacity:0;
+      visibility:hidden;
+
+      transition:.25s;
+    }
+
+    .overlay.show {
+      opacity:1;
+      visibility:visible;
+    }
+
+    /* =========================
+       SIDEBAR
+       ========================= */
+
+    .sidebar {
+      position:fixed;
+
+      inset:0 auto 0 0;
+
+      z-index:100;
+
+      display:flex;
+      flex-direction:column;
+
+      width:min(430px,92vw);
+
+      background:var(--panel);
+
+      border-right:1px solid var(--line);
+
+      box-shadow:var(--shadow);
+
+      transform:translateX(-105%);
+
+      transition:
+        transform .3s cubic-bezier(.2,.75,.25,1);
+    }
+
+    .sidebar.open {
+      transform:translateX(0);
+    }
+
+    .sidebar-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+
+      padding:23px 21px 17px;
+
+      border-bottom:1px solid var(--line);
+    }
+
+    .eyebrow {
+      color:var(--accent-2);
+
+      font-size:10px;
+      font-weight:900;
+
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+
+    h1 {
+      margin:5px 0 0;
+
+      font-size:25px;
+
+      letter-spacing:-.04em;
+    }
+
+    .close {
+      font-size:27px;
+    }
+
+    /* =========================
+       BUSCADOR
+       ========================= */
+
+    .search {
+      display:flex;
+      align-items:center;
+      gap:8px;
+
+      margin:16px 20px 7px;
+
+      padding:0 13px;
+
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+
+      background:var(--panel-2);
+
+      color:var(--muted);
+    }
+
+    .search input {
+      width:100%;
+      height:47px;
+
+      border:0;
+      outline:0;
+
+      background:transparent;
+
+      color:var(--text);
+    }
+
+    /* =========================
+       TEMAS
+       ========================= */
+
+    .themes {
+      display:flex;
+      gap:7px;
+
+      overflow:auto;
+
+      padding:8px 20px 12px;
+
+      scrollbar-width:none;
+    }
+
+    .themes::-webkit-scrollbar {
+      display:none;
+    }
+
+    .theme {
+      flex:0 0 auto;
+
+      padding:7px 11px;
+
+      border:1px solid var(--line);
+      border-radius:999px;
+
+      background:transparent;
+
+      color:var(--muted);
+
+      cursor:pointer;
+
+      font-size:11px;
+    }
+
+    .theme.active {
+      border-color:var(--accent);
+
+      background:var(--accent);
+
+      color:#fff;
+    }
+
+    /* =========================
+       CATEGORIAS
+       ========================= */
+
+    .categories {
+      display:flex;
+      gap:7px;
+
+      overflow:auto;
+
+      padding:0 20px 12px;
+
+      scrollbar-width:none;
+    }
+
+    .categories::-webkit-scrollbar {
+      display:none;
+    }
+
+    .category {
+      flex:0 0 auto;
+
+      padding:8px 13px;
+
+      border:1px solid var(--line);
+      border-radius:999px;
+
+      background:var(--panel-2);
+
+      color:var(--muted);
+
+      cursor:pointer;
+
+      font-size:11px;
+      font-weight:700;
+    }
+
+    .category.active {
+      border-color:var(--accent);
+
+      background:var(--accent);
+
+      color:#fff;
+    }
+
+    /* =========================
+       LISTA
+       ========================= */
+
+    .count {
+      padding:0 20px 10px;
+
+      color:var(--muted);
+
+      font-size:12px;
+    }
+
+    .list {
+      flex:1;
+
+      min-height:0;
+
+      overflow-y:auto;
+
+      padding:0 14px 20px;
+    }
+
+    .channel {
+      display:flex;
+      align-items:center;
+
+      width:100%;
+      min-height:67px;
+
+      gap:12px;
+
+      margin-bottom:7px;
+
+      padding:9px 11px;
+
+      border:1px solid transparent;
+      border-radius:var(--radius);
+
+      background:transparent;
+
+      color:var(--text);
+
+      text-align:left;
+
+      cursor:pointer;
+
+      transition:.2s;
+    }
+
+    .channel:hover {
+      background:
+        color-mix(
+          in srgb,
+          var(--accent) 12%,
+          transparent
+        );
+
+      transform:translateX(3px);
+    }
+
+    .channel.active {
+      border-color:
+        color-mix(
+          in srgb,
+          var(--accent) 60%,
+          transparent
+        );
+
+      background:var(--accent);
+
+      color:#fff;
+    }
+
+    .logo {
+      width:44px;
+      height:44px;
+
+      flex:0 0 44px;
+
+      padding:4px;
+
+      border-radius:9px;
+
+      object-fit:contain;
+
+      background:#fff;
+    }
+
+    .no-logo {
+      display:grid;
+      place-items:center;
+
+      padding:0;
+
+      background:#343944;
+
+      color:#fff;
+
+      font-size:13px;
+      font-weight:900;
+    }
+
+    .copy {
+      display:flex;
+
+      min-width:0;
+
+      flex:1;
+
+      flex-direction:column;
+
+      gap:3px;
+    }
+
+    .copy b,
+    .copy small {
+      overflow:hidden;
+
+      text-overflow:ellipsis;
+
+      white-space:nowrap;
+    }
+
+    .copy b {
+      font-size:14px;
+    }
+
+    .copy small {
+      color:var(--muted);
+
+      font-size:11px;
+    }
+
+    .active .copy small {
+      color:rgba(255,255,255,.7);
+    }
+
+    .bars {
+      display:flex;
+      align-items:end;
+
+      gap:2px;
+
+      height:17px;
+    }
+
+    .bars i {
+      width:3px;
+      height:8px;
+
+      border-radius:3px;
+
+      background:var(--accent-2);
+
+      animation:eq .7s infinite alternate;
+    }
+
+    .bars i:nth-child(2) {
+      height:16px;
+      animation-delay:-.4s;
+    }
+
+    .bars i:nth-child(3) {
+      height:11px;
+      animation-delay:-.2s;
+    }
+
+    /* =========================
+       FOCUS
+       ========================= */
+
+    .focusable:focus-visible {
+      outline:3px solid var(--accent-2);
+      outline-offset:3px;
+
+      box-shadow:
+        0 0 15px
+        color-mix(
+          in srgb,
+          var(--accent) 70%,
+          transparent
+        );
+    }
+
+    /* =========================
+       ANIMACIONES
+       ========================= */
+
+    @keyframes eq {
+      from {
+        transform:scaleY(.45);
+        opacity:.55;
+      }
+
+      to {
+        transform:scaleY(1);
+        opacity:1;
+      }
+    }
+
+    /* =========================
+       RESPONSIVE
+       ========================= */
+
+    @media (max-width:700px) {
+
+      .topbar {
+        min-height:70px;
+        padding:12px 14px;
+        gap:10px;
+      }
+
+      .icon {
+        width:42px;
+        height:42px;
+      }
+
+      .current {
+        max-width:48vw;
+      }
+
+      .live {
+        display:none;
+      }
+
+      .sidebar {
+        width:min(390px,94vw);
+      }
+
+      .fullscreen-btn {
+        right:14px;
+        bottom:14px;
+
+        width:44px;
+        height:44px;
+
+        font-size:23px;
+      }
+    }
+
+    @media (max-height:500px) and (orientation:landscape) {
+
+      .topbar {
+        padding-block:8px;
+        min-height:58px;
+      }
+
+      .status {
+        bottom:16px;
+      }
+
+      .fullscreen-btn {
+        right:14px;
+        bottom:14px;
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+
+      *,
+      *:before,
+      *:after {
+        animation-duration:.01ms !important;
+        transition-duration:.01ms !important;
+        scroll-behavior:auto !important;
+      }
+    }
   </style>
 </head>
-<body>
-  <main class="app" id="app">
-    <div class="video-container"><video id="video" playsinline webkit-playsinline preload="metadata"></video>
 
-<button id="fullscreenBtn"
-        class="fullscreen-btn focusable"
+<body>
+
+<main class="app" id="app">
+
+  <!-- =========================
+       REPRODUCTOR
+       ========================= -->
+
+  <div class="video-container">
+
+    <video
+      id="video"
+      playsinline
+      webkit-playsinline
+      preload="metadata">
+    </video>
+
+    <button
+      id="fullscreenBtn"
+      class="fullscreen-btn focusable"
+      type="button"
+      aria-label="Pantalla completa"
+      title="Pantalla completa">
+      ⛶
+    </button>
+
+  </div>
+
+  <!-- =========================
+       BARRA SUPERIOR
+       ========================= -->
+
+  <header class="topbar">
+
+    <button
+      id="menuBtn"
+      class="icon focusable"
+      type="button"
+      aria-label="Abrir canales">
+
+      <span class="menu"></span>
+
+    </button>
+
+    <div class="brand">
+      PK TV
+      <small>LIVE</small>
+    </div>
+
+    <div
+      id="current"
+      class="current">
+    </div>
+
+    <div class="live">
+      <i></i>
+      EN VIVO
+    </div>
+
+  </header>
+
+  <!-- STATUS -->
+
+  <div
+    id="status"
+    class="status">
+
+    <i></i>
+
+    <span>
+      Cargando canales…
+    </span>
+
+  </div>
+
+  <!-- OVERLAY -->
+
+  <div
+    id="overlay"
+    class="overlay">
+  </div>
+
+  <!-- =========================
+       SIDEBAR
+       ========================= -->
+
+  <aside
+    id="sidebar"
+    class="sidebar"
+    aria-label="Lista de canales">
+
+    <div class="sidebar-head">
+
+      <div>
+
+        <span class="eyebrow">
+          Biblioteca IPTV
+        </span>
+
+        <h1>
+          Canales TV
+        </h1>
+
+      </div>
+
+      <button
+        id="closeBtn"
+        class="icon close focusable"
         type="button"
-        aria-label="Pantalla completa">
-  ⛶
-</button></video></div>
-    <header class="topbar">
-      <button id="menuBtn" class="icon focusable" type="button" aria-label="Abrir canales"><span class="menu"></span></button>
-      <div class="brand">PK TV <small>LIVE</small></div><div id="current" class="current"></div><div class="live"><i></i> EN VIVO</div>
-    </header>
-    <div id="status" class="status"><i></i><span>Cargando canales…</span></div><div id="overlay" class="overlay"></div>
-    <aside id="sidebar" class="sidebar" aria-label="Lista de canales">
-      <div class="sidebar-head"><div><span class="eyebrow">Biblioteca IPTV</span><h1>Canales TV</h1></div><button id="closeBtn" class="icon close focusable" type="button" aria-label="Cerrar">×</button></div>
-      <label class="search"><span>⌕</span><input id="search" class="focusable" type="search" placeholder="Buscar canal…" autocomplete="off"></label>
-      <div class="themes" aria-label="Elegir estilo"><button class="theme active focusable" data-theme="default">Rojo</button><button class="theme focusable" data-theme="glass">Glass</button><button class="theme focusable" data-theme="tv">Smart TV</button><button class="theme focusable" data-theme="anime">Anime</button><button class="theme focusable" data-theme="light">Claro</button></div>
-      <div id="categories" class="categories" role="tablist" aria-label="Categorías"></div>
-      <div id="count" class="count">Cargando…</div><div id="list" class="list"></div>
-    </aside>
-  </main>
+        aria-label="Cerrar">
+        ×
+      </button>
+
+    </div>
+
+    <!-- BUSCADOR -->
+
+    <label class="search">
+
+      <span>⌕</span>
+
+      <input
+        id="search"
+        class="focusable"
+        type="search"
+        placeholder="Buscar canal…"
+        autocomplete="off">
+
+    </label>
+
+    <!-- TEMAS -->
+
+    <div
+      class="themes"
+      aria-label="Elegir estilo">
+
+      <button
+        class="theme active focusable"
+        data-theme="default">
+        Rojo
+      </button>
+
+      <button
+        class="theme focusable"
+        data-theme="glass">
+        Glass
+      </button>
+
+      <button
+        class="theme focusable"
+        data-theme="tv">
+        Smart TV
+      </button>
+
+      <button
+        class="theme focusable"
+        data-theme="anime">
+        Anime
+      </button>
+
+      <button
+        class="theme focusable"
+        data-theme="light">
+        Claro
+      </button>
+
+    </div>
+
+    <!-- CATEGORIAS -->
+
+    <div
+      id="categories"
+      class="categories"
+      role="tablist"
+      aria-label="Categorías">
+    </div>
+
+    <!-- CONTADOR -->
+
+    <div
+      id="count"
+      class="count">
+      Cargando…
+    </div>
+
+    <!-- LISTA -->
+
+    <div
+      id="list"
+      class="list">
+    </div>
+
+  </aside>
+
+</main>
+
 <script>
 'use strict';
-const PLAYLIST_URL = '/playlist/tv_chile_2026_token_seguro_8f4Kp92x.m3u';
-const $ = id => document.getElementById(id); const video=$('video'), list=$('list'), sidebar=$('sidebar'), overlay=$('overlay'), status=$('status'), statusText=status.querySelector('span'), current=$('current'), categoriesBox=$('categories');
-let hls=null, channels=[], selected=null, selectedCategory='TODOS';
-function showStatus(text,error=false,hide=false){statusText.textContent=text;status.classList.toggle('error',error);status.classList.toggle('hidden',hide)}
-function parseM3U(text){const out=[];let info={};for(const raw of text.replace(/^\uFEFF/,'').split(/\r?\n/)){const line=raw.trim();if(!line)continue;if(line.toUpperCase().startsWith('#EXTINF')){const comma=line.indexOf(',');const meta=comma<0?line:line.slice(0,comma);info={title:comma<0?'Canal sin nombre':line.slice(comma+1).trim(),logo:meta.match(/tvg-logo="([^"]*)"/i)?.[1]||'',group:meta.match(/group-title="([^"]*)"/i)?.[1]||'General'};continue}if(/^https?:\/\//i.test(line)){out.push({id:`channel-${out.length+1}`,title:info.title||`Canal ${out.length+1}`,logo:info.logo,group:info.group,url:line});info={}}}return out}
-function renderCategories(){categoriesBox.replaceChildren();const groups=[...new Set(channels.map(c=>(c.group||'GENERAL').trim()))].sort((a,b)=>a.localeCompare(b,'es'));['TODOS',...groups].forEach(group=>{const button=document.createElement('button');button.className=`category focusable ${selectedCategory===group?'active':''}`;button.type='button';button.textContent=group;button.onclick=()=>{selectedCategory=group;renderCategories();render()};categoriesBox.append(button)})}
-	function render(){const term=$('search').value.toLocaleLowerCase('es').trim();const filtered=channels.filter(c=>{const matchesCategory=selectedCategory==='TODOS'||(c.group||'GENERAL').trim()===selectedCategory;const matchesSearch=`${c.title} ${c.group}`.toLocaleLowerCase('es').includes(term);return matchesCategory&&matchesSearch});$('count').textContent=`${filtered.length} de ${channels.length} canales`;list.replaceChildren();if(!filtered.length){list.innerHTML='<div class="count">No se encontraron canales.</div>';return}const frag=document.createDocumentFragment();filtered.forEach(channel=>{const btn=document.createElement('button');btn.className=`channel focusable ${selected?.id===channel.id?'active':''}`;btn.type='button';if(channel.logo){const img=document.createElement('img');img.className='logo';img.src=channel.logo;img.alt='';img.onerror=()=>img.replaceWith(fallbackLogo());btn.append(img)}else btn.append(fallbackLogo());const copy=document.createElement('span');copy.className='copy';copy.innerHTML=`<b></b><small></small>`;copy.firstChild.textContent=channel.title;copy.lastChild.textContent=channel.group||'General';btn.append(copy);if(selected?.id===channel.id)btn.insertAdjacentHTML('beforeend','<span class="bars" aria-label="Reproduciendo"><i></i><i></i><i></i></span>');btn.onclick=()=>play(channel);frag.append(btn)});list.append(frag)}
-function fallbackLogo(){const el=document.createElement('span');el.className='logo no-logo';el.textContent='TV';return el}
-function clearVideo(){if(hls){hls.destroy();hls=null}video.pause();video.removeAttribute('src');video.load()}
-function play(channel){if(!channel)return;selected=channel;current.textContent=channel.title;render();showStatus(`Cargando ${channel.title}…`);clearVideo();const url=channel.url;if(video.canPlayType('application/vnd.apple.mpegurl')){video.src=url;video.play().catch(()=>showStatus('Presiona reproducir para iniciar'));return}if(window.Hls&&Hls.isSupported()){hls=new Hls({enableWorker:true,lowLatencyMode:true,maxBufferLength:30});hls.loadSource(url);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,()=>video.play().catch(()=>showStatus('Presiona reproducir para iniciar')));hls.on(Hls.Events.ERROR,(_,data)=>{if(!data.fatal)return;if(data.type===Hls.ErrorTypes.NETWORK_ERROR)hls.startLoad();else if(data.type===Hls.ErrorTypes.MEDIA_ERROR)hls.recoverMediaError();else showStatus('Canal no disponible',true)});return}video.src=url;video.play().catch(()=>showStatus('Formato no compatible',true))}
-async function load(){showStatus('Cargando canales…');try{const response=await fetch(PLAYLIST_URL,{cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}`);channels=parseM3U(await response.text());renderCategories();render();if(channels.length)play(channels[0]);else showStatus('Lista vacía',true)}catch(error){console.error(error);showStatus('Error al cargar la playlist',true);$('count').textContent='No se pudo cargar la lista'}}
-$('menuBtn').onclick=()=>{sidebar.classList.add('open');overlay.classList.add('show');setTimeout(()=>$('search').focus(),120)};$('closeBtn').onclick=close;overlay.onclick=close;function close(){sidebar.classList.remove('open');overlay.classList.remove('show');$('menuBtn').focus()}$('search').oninput=render;document.querySelectorAll('.theme').forEach(btn=>btn.onclick=()=>{document.documentElement.dataset.theme=btn.dataset.theme==='default'?'':btn.dataset.theme;document.querySelectorAll('.theme').forEach(x=>x.classList.toggle('active',x===btn))});document.addEventListener('keydown',e=>{if((e.key==='Escape'||e.key==='Backspace'||e.keyCode===10009)&&sidebar.classList.contains('open')){e.preventDefault();close()}});video.addEventListener('playing',()=>showStatus('Reproduciendo',false,true));video.addEventListener('waiting',()=>showStatus('Cargando señal…'));video.addEventListener('error',()=>showStatus('No se pudo reproducir la señal',true));load();
+
+/* =========================
+   CONFIGURACIÓN
+   ========================= */
+
+const PLAYLIST_URL =
+  '/playlist/tv_chile_2026_token_seguro_8f4Kp92x.m3u';
+
+
+/* =========================
+   ELEMENTOS
+   ========================= */
+
+const $ = id => document.getElementById(id);
+
+const video = $('video');
+const list = $('list');
+const sidebar = $('sidebar');
+const overlay = $('overlay');
+const status = $('status');
+const statusText = status.querySelector('span');
+const current = $('current');
+const categoriesBox = $('categories');
+
+const fullscreenBtn = $('fullscreenBtn');
+const videoContainer =
+  document.querySelector('.video-container');
+
+
+/* =========================
+   VARIABLES
+   ========================= */
+
+let hls = null;
+let channels = [];
+let selected = null;
+let selectedCategory = 'TODOS';
+
+
+/* =========================
+   STATUS
+   ========================= */
+
+function showStatus(
+  text,
+  error = false,
+  hide = false
+) {
+
+  statusText.textContent = text;
+
+  status.classList.toggle(
+    'error',
+    error
+  );
+
+  status.classList.toggle(
+    'hidden',
+    hide
+  );
+}
+
+
+/* =========================
+   PARSE M3U
+   ========================= */
+
+function parseM3U(text) {
+
+  const out = [];
+
+  let info = {};
+
+  for (
+    const raw
+    of text
+      .replace(/^\uFEFF/, '')
+      .split(/\r?\n/)
+  ) {
+
+    const line = raw.trim();
+
+    if (!line) continue;
+
+    if (
+      line
+        .toUpperCase()
+        .startsWith('#EXTINF')
+    ) {
+
+      const comma = line.indexOf(',');
+
+      const meta =
+        comma < 0
+          ? line
+          : line.slice(0, comma);
+
+      info = {
+
+        title:
+          comma < 0
+            ? 'Canal sin nombre'
+            : line
+                .slice(comma + 1)
+                .trim(),
+
+        logo:
+          meta.match(
+            /tvg-logo="([^"]*)"/i
+          )?.[1] || '',
+
+        group:
+          meta.match(
+            /group-title="([^"]*)"/i
+          )?.[1] || 'General'
+
+      };
+
+      continue;
+    }
+
+    if (
+      /^https?:\/\//i.test(line)
+    ) {
+
+      out.push({
+
+        id:
+          `channel-${out.length + 1}`,
+
+        title:
+          info.title ||
+          `Canal ${out.length + 1}`,
+
+        logo:
+          info.logo,
+
+        group:
+          info.group,
+
+        url:
+          line
+
+      });
+
+      info = {};
+    }
+  }
+
+  return out;
+}
+
+
+/* =========================
+   CATEGORIAS
+   ========================= */
+
+function renderCategories() {
+
+  categoriesBox.replaceChildren();
+
+  const groups = [
+    ...new Set(
+      channels.map(
+        c => (c.group || 'GENERAL').trim()
+      )
+    )
+  ].sort(
+    (a,b) =>
+      a.localeCompare(b,'es')
+  );
+
+  [
+    'TODOS',
+    ...groups
+  ].forEach(group => {
+
+    const button =
+      document.createElement('button');
+
+    button.className =
+      `category focusable ${
+        selectedCategory === group
+          ? 'active'
+          : ''
+      }`;
+
+    button.type = 'button';
+
+    button.textContent = group;
+
+    button.onclick = () => {
+
+      selectedCategory = group;
+
+      renderCategories();
+
+      render();
+    };
+
+    categoriesBox.append(button);
+
+  });
+}
+
+
+/* =========================
+   RENDER CANALES
+   ========================= */
+
+function render() {
+
+  const term =
+    $('search')
+      .value
+      .toLocaleLowerCase('es')
+      .trim();
+
+  const filtered =
+    channels.filter(channel => {
+
+      const matchesCategory =
+        selectedCategory === 'TODOS' ||
+        (channel.group || 'GENERAL')
+          .trim() === selectedCategory;
+
+      const matchesSearch =
+        `${channel.title} ${channel.group}`
+          .toLocaleLowerCase('es')
+          .includes(term);
+
+      return (
+        matchesCategory &&
+        matchesSearch
+      );
+
+    });
+
+  $('count').textContent =
+    `${filtered.length} de ${channels.length} canales`;
+
+  list.replaceChildren();
+
+  if (!filtered.length) {
+
+    list.innerHTML =
+      '<div class="count">No se encontraron canales.</div>';
+
+    return;
+  }
+
+  const frag =
+    document.createDocumentFragment();
+
+  filtered.forEach(channel => {
+
+    const btn =
+      document.createElement('button');
+
+    btn.className =
+      `channel focusable ${
+        selected?.id === channel.id
+          ? 'active'
+          : ''
+      }`;
+
+    btn.type = 'button';
+
+    /* LOGO */
+
+    if (channel.logo) {
+
+      const img =
+        document.createElement('img');
+
+      img.className = 'logo';
+
+      img.src = channel.logo;
+
+      img.alt = '';
+
+      img.onerror = () => {
+        img.replaceWith(
+          fallbackLogo()
+        );
+      };
+
+      btn.append(img);
+
+    } else {
+
+      btn.append(
+        fallbackLogo()
+      );
+
+    }
+
+    /* TEXTO */
+
+    const copy =
+      document.createElement('span');
+
+    copy.className = 'copy';
+
+    copy.innerHTML =
+      `<b></b><small></small>`;
+
+    copy.firstChild.textContent =
+      channel.title;
+
+    copy.lastChild.textContent =
+      channel.group || 'General';
+
+    btn.append(copy);
+
+    /* ECUALIZADOR */
+
+    if (
+      selected?.id === channel.id
+    ) {
+
+      btn.insertAdjacentHTML(
+        'beforeend',
+        `
+        <span
+          class="bars"
+          aria-label="Reproduciendo">
+
+          <i></i>
+          <i></i>
+          <i></i>
+
+        </span>
+        `
+      );
+    }
+
+    btn.onclick = () =>
+      play(channel);
+
+    frag.append(btn);
+
+  });
+
+  list.append(frag);
+}
+
+
+/* =========================
+   LOGO FALLBACK
+   ========================= */
+
+function fallbackLogo() {
+
+  const el =
+    document.createElement('span');
+
+  el.className =
+    'logo no-logo';
+
+  el.textContent = 'TV';
+
+  return el;
+}
+
+
+/* =========================
+   LIMPIAR VIDEO
+   ========================= */
+
+function clearVideo() {
+
+  if (hls) {
+
+    hls.destroy();
+
+    hls = null;
+  }
+
+  video.pause();
+
+  video.removeAttribute('src');
+
+  video.load();
+}
+
+
+/* =========================
+   REPRODUCIR CANAL
+   ========================= */
+
+function play(channel) {
+
+  if (!channel) return;
+
+  selected = channel;
+
+  current.textContent =
+    channel.title;
+
+  render();
+
+  showStatus(
+    `Cargando ${channel.title}…`
+  );
+
+  clearVideo();
+
+  const url =
+    channel.url;
+
+  /* HLS NATIVO */
+
+  if (
+    video.canPlayType(
+      'application/vnd.apple.mpegurl'
+    )
+  ) {
+
+    video.src = url;
+
+    video.play()
+      .catch(() =>
+        showStatus(
+          'Presiona reproducir para iniciar'
+        )
+      );
+
+    return;
+  }
+
+  /* HLS.JS */
+
+  if (
+    window.Hls &&
+    Hls.isSupported()
+  ) {
+
+    hls =
+      new Hls({
+
+        enableWorker:true,
+
+        lowLatencyMode:true,
+
+        maxBufferLength:30
+
+      });
+
+    hls.loadSource(url);
+
+    hls.attachMedia(video);
+
+    hls.on(
+      Hls.Events.MANIFEST_PARSED,
+      () => {
+
+        video.play()
+          .catch(() =>
+            showStatus(
+              'Presiona reproducir para iniciar'
+            )
+          );
+
+      }
+    );
+
+    hls.on(
+      Hls.Events.ERROR,
+      (_, data) => {
+
+        if (!data.fatal)
+          return;
+
+        if (
+          data.type ===
+          Hls.ErrorTypes.NETWORK_ERROR
+        ) {
+
+          hls.startLoad();
+
+        } else if (
+          data.type ===
+          Hls.ErrorTypes.MEDIA_ERROR
+        ) {
+
+          hls.recoverMediaError();
+
+        } else {
+
+          showStatus(
+            'Canal no disponible',
+            true
+          );
+        }
+
+      }
+    );
+
+    return;
+  }
+
+  /* VIDEO DIRECTO */
+
+  video.src = url;
+
+  video.play()
+    .catch(() =>
+      showStatus(
+        'Formato no compatible',
+        true
+      )
+    );
+}
+
+
+/* =========================
+   FULLSCREEN
+   ========================= */
+
+async function toggleFullscreen() {
+
+  try {
+
+    const active =
+      document.fullscreenElement ||
+      document.webkitFullscreenElement;
+
+    if (!active) {
+
+      /*
+       * Fullscreen sobre el contenedor,
+       * no solamente sobre el video.
+       */
+
+      if (
+        videoContainer.requestFullscreen
+      ) {
+
+        await videoContainer.requestFullscreen();
+
+      } else if (
+        videoContainer.webkitRequestFullscreen
+      ) {
+
+        videoContainer.webkitRequestFullscreen();
+
+      } else if (
+        video.webkitEnterFullscreen
+      ) {
+
+        /*
+         * Compatibilidad con algunos
+         * navegadores móviles.
+         */
+
+        video.webkitEnterFullscreen();
+
+        return;
+      }
+
+      /*
+       * Intentar orientación horizontal
+       * en Android.
+       */
+
+      try {
+
+        if (
+          screen.orientation &&
+          screen.orientation.lock
+        ) {
+
+          await screen.orientation.lock(
+            'landscape'
+          );
+        }
+
+      } catch (error) {
+
+        console.log(
+          'Orientación horizontal no disponible'
+        );
+      }
+
+    } else {
+
+      if (
+        document.exitFullscreen
+      ) {
+
+        await document.exitFullscreen();
+
+      } else if (
+        document.webkitExitFullscreen
+      ) {
+
+        document.webkitExitFullscreen();
+      }
+
+      try {
+
+        if (
+          screen.orientation &&
+          screen.orientation.unlock
+        ) {
+
+          screen.orientation.unlock();
+        }
+
+      } catch (error) {}
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Error fullscreen:',
+      error
+    );
+  }
+}
+
+
+/* =========================
+   BOTON FULLSCREEN
+   ========================= */
+
+fullscreenBtn.addEventListener(
+  'click',
+  toggleFullscreen
+);
+
+
+/* =========================
+   ACTUALIZAR BOTON
+   ========================= */
+
+function updateFullscreenButton() {
+
+  const active =
+    document.fullscreenElement ||
+    document.webkitFullscreenElement;
+
+  if (active) {
+
+    fullscreenBtn.textContent =
+      '⛶';
+
+    fullscreenBtn.setAttribute(
+      'aria-label',
+      'Salir de pantalla completa'
+    );
+
+    fullscreenBtn.title =
+      'Salir de pantalla completa';
+
+  } else {
+
+    fullscreenBtn.textContent =
+      '⛶';
+
+    fullscreenBtn.setAttribute(
+      'aria-label',
+      'Pantalla completa'
+    );
+
+    fullscreenBtn.title =
+      'Pantalla completa';
+  }
+}
+
+
+document.addEventListener(
+  'fullscreenchange',
+  updateFullscreenButton
+);
+
+document.addEventListener(
+  'webkitfullscreenchange',
+  updateFullscreenButton
+);
+
+
+/* =========================
+   DOBLE TOQUE EN ANDROID
+   ========================= */
+
+let lastVideoTap = 0;
+
+video.addEventListener(
+  'click',
+  () => {
+
+    const now =
+      Date.now();
+
+    if (
+      now - lastVideoTap < 300
+    ) {
+
+      toggleFullscreen();
+    }
+
+    lastVideoTap = now;
+  }
+);
+
+
+/* =========================
+   MENU
+   ========================= */
+
+$('menuBtn').onclick = () => {
+
+  sidebar.classList.add('open');
+
+  overlay.classList.add('show');
+
+  setTimeout(
+    () => $('search').focus(),
+    120
+  );
+};
+
+
+/* =========================
+   CERRAR MENU
+   ========================= */
+
+$('closeBtn').onclick =
+  close;
+
+overlay.onclick =
+  close;
+
+function close() {
+
+  sidebar.classList.remove('open');
+
+  overlay.classList.remove('show');
+
+  $('menuBtn').focus();
+}
+
+
+/* =========================
+   BUSCAR
+   ========================= */
+
+$('search').oninput =
+  render;
+
+
+/* =========================
+   CAMBIO DE TEMA
+   ========================= */
+
+document
+  .querySelectorAll('.theme')
+  .forEach(btn => {
+
+    btn.onclick = () => {
+
+      const theme =
+        btn.dataset.theme;
+
+      if (
+        theme === 'default'
+      ) {
+
+        document.documentElement
+          .removeAttribute(
+            'data-theme'
+          );
+
+      } else {
+
+        document.documentElement
+          .dataset.theme =
+          theme;
+      }
+
+      document
+        .querySelectorAll('.theme')
+        .forEach(x => {
+
+          x.classList.toggle(
+            'active',
+            x === btn
+          );
+
+        });
+    };
+  });
+
+
+/* =========================
+   TECLADO / SMART TV
+   ========================= */
+
+document.addEventListener(
+  'keydown',
+  e => {
+
+    if (
+      (
+        e.key === 'Escape' ||
+        e.key === 'Backspace' ||
+        e.keyCode === 10009
+      ) &&
+      sidebar.classList.contains('open')
+    ) {
+
+      e.preventDefault();
+
+      close();
+    }
+
+  }
+);
+
+
+/* =========================
+   EVENTOS VIDEO
+   ========================= */
+
+video.addEventListener(
+  'playing',
+  () =>
+    showStatus(
+      'Reproduciendo',
+      false,
+      true
+    )
+);
+
+video.addEventListener(
+  'waiting',
+  () =>
+    showStatus(
+      'Cargando señal…'
+    )
+);
+
+video.addEventListener(
+  'error',
+  () =>
+    showStatus(
+      'No se pudo reproducir la señal',
+      true
+    )
+);
+
+
+/* =========================
+   CARGAR PLAYLIST
+   ========================= */
+
+async function load() {
+
+  showStatus(
+    'Cargando canales…'
+  );
+
+  try {
+
+    const response =
+      await fetch(
+        PLAYLIST_URL,
+        {
+          cache:'no-store'
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+    }
+
+    channels =
+      parseM3U(
+        await response.text()
+      );
+
+    renderCategories();
+
+    render();
+
+    if (channels.length) {
+
+      play(channels[0]);
+
+    } else {
+
+      showStatus(
+        'Lista vacía',
+        true
+      );
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    showStatus(
+      'Error al cargar la playlist',
+      true
+    );
+
+    $('count').textContent =
+      'No se pudo cargar la lista';
+  }
+}
+
+
+/* =========================
+   INICIAR
+   ========================= */
+
+load();
+
 </script>
+
 </body>
 </html>
