@@ -79,7 +79,7 @@
       fill: var(--text-muted);
     }
 
-    /* Grid Principal expandido a 100% */
+    /* Grid Principal */
     .main-layout {
       display: grid;
       grid-template-columns: 1fr;
@@ -87,7 +87,6 @@
       flex: 1;
     }
 
-    /* Espacio reservado para evitar que el layout salte cuando el video flota */
     .screen-placeholder {
       width: 100%;
       display: none;
@@ -163,7 +162,7 @@
       aspect-ratio: 16 / 9;
     }
 
-    /* ESTILO VIDEO FLOTANTE (Móviles al hacer Scroll) */
+    /* ESTILO VIDEO FLOTANTE */
     .screen-wrapper.floating {
       position: fixed;
       bottom: 20px;
@@ -267,6 +266,13 @@
       justify-content: center;
       font-size: 16px;
       flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .channel-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     .channel-name {
@@ -307,9 +313,6 @@
       display: none;
     }
 
-    /* ADAPTACIONES SEGÚN TAMAÑO DE PANTALLA */
-
-    /* Pantallas de Escritorio y Smart TV */
     @media (min-width: 900px) {
       .main-layout {
         grid-template-columns: 1.8fr 1fr;
@@ -324,7 +327,6 @@
       .channel-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     }
 
-    /* Grid de tarjetas a 2 columnas en tablets */
     @media (min-width: 600px) and (max-width: 899px) {
       .channel-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -351,7 +353,7 @@
         <div id="screen-placeholder" class="screen-placeholder"></div>
         <div id="screen-wrapper" class="screen-wrapper">
           <div class="screen-header">
-            <span class="channel-badge" id="channel-title">Noticias 24/7</span>
+            <span class="channel-badge" id="channel-title">Cargando canales...</span>
             <div class="live-badge">
               <span class="live-dot"></span> LIVE
             </div>
@@ -364,9 +366,6 @@
       <div class="sidebar-section">
         <div class="categories-tabs" id="category-tabs">
           <button class="tab-btn active" data-category="Todos">Todos</button>
-          <button class="tab-btn" data-category="Noticias">Noticias</button>
-          <button class="tab-btn" data-category="Deportes">Deportes</button>
-          <button class="tab-btn" data-category="Cine">Cine</button>
         </div>
 
         <div class="channel-grid" id="channel-grid"></div>
@@ -376,16 +375,7 @@
     </div>
   </div>
 
-  <script>
-    const channels = [
-      { id: 1, category: "Noticias", icon: "📰", name: "Noticias 24/7", url: "https://test-streams.mux.dev/x36xhtml5/x36xhtml5.m3u8" },
-      { id: 2, category: "Noticias", icon: "🌐", name: "World News HD", url: "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8" },
-      { id: 3, category: "Deportes", icon: "⚽", name: "Deportes Total", url: "https://test-streams.mux.dev/x36xhtml5/x36xhtml5.m3u8" },
-      { id: 4, category: "Deportes", icon: "🏎️", name: "Motor Sports", url: "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8" },
-      { id: 5, category: "Cine", icon: "🎬", name: "Cinema Central", url: "https://test-streams.mux.dev/x36xhtml5/x36xhtml5.m3u8" },
-      { id: 6, category: "Cine", icon: "🍿", name: "Big Buck Channel", url: "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8" }
-    ];
-
+  <script type="module">
     const video = document.getElementById('video');
     const screenWrapper = document.getElementById('screen-wrapper');
     const screenPlaceholder = document.getElementById('screen-placeholder');
@@ -395,10 +385,93 @@
     const categoryTabs = document.getElementById('category-tabs');
     const noResults = document.getElementById('no-results');
 
+    let channels = [];
     let hlsInstance = null;
-    let activeChannelId = channels[0].id;
+    let activeChannelId = null;
     let selectedCategory = "Todos";
 
+    // 1. Parser M3U
+    function parseM3U(content) {
+      const lines = content.split('\n');
+      const parsedChannels = [];
+      let currentChannel = {};
+
+      lines.forEach(line => {
+        line = line.trim();
+        if (line.startsWith('#EXTINF:')) {
+          const nameMatch = line.match(/,(.+)$/);
+          const name = nameMatch ? nameMatch[1].trim() : 'Canal sin nombre';
+
+          const groupMatch = line.match(/group-title="([^"]+)"/i);
+          const category = groupMatch ? groupMatch[1].trim() : 'General';
+
+          const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+          const logo = logoMatch ? logoMatch[1] : null;
+
+          currentChannel = {
+            name,
+            category,
+            icon: logo ? `<img src="${logo}" alt="logo" onerror="this.src=''; this.parentElement.innerHTML='📺'"/>` : '📺'
+          };
+        } else if (line.startsWith('http')) {
+          if (currentChannel.name) {
+            currentChannel.id = Math.random().toString(36).substr(2, 9);
+            currentChannel.url = line;
+            parsedChannels.push({ ...currentChannel });
+            currentChannel = {};
+          }
+        }
+      });
+
+      return parsedChannels;
+    }
+
+    // 2. Cargar variables de entorno y listas M3U
+    async function initApp() {
+      const rawUrls = import.meta.env.VITE_M3U_URLS || "";
+      const m3uUrls = rawUrls.split(',').map(url => url.trim()).filter(Boolean);
+
+      if (m3uUrls.length === 0) {
+        channelTitle.textContent = "Sin canales configurados";
+        return;
+      }
+
+      const results = await Promise.all(
+        m3uUrls.map(async (url) => {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) return [];
+            const text = await res.text();
+            return parseM3U(text);
+          } catch (e) {
+            console.error(`Error al cargar M3U desde ${url}:`, e);
+            return [];
+          }
+        })
+      );
+
+      channels = results.flat();
+
+      if (channels.length > 0) {
+        buildCategoryTabs();
+        activeChannelId = channels[0].id;
+        channelTitle.textContent = channels[0].name;
+        loadStream(channels[0].url);
+        renderChannels();
+      } else {
+        channelTitle.textContent = "Error al cargar canales M3U";
+      }
+    }
+
+    // 3. Generar pestañas de categorías automáticamente
+    function buildCategoryTabs() {
+      const categories = ['Todos', ...new Set(channels.map(c => c.category))];
+      categoryTabs.innerHTML = categories.slice(0, 10).map(cat => 
+        `<button class="tab-btn ${cat === 'Todos' ? 'active' : ''}" data-category="${cat}">${cat}</button>`
+      ).join('');
+    }
+
+    // 4. Reproductor HLS
     function loadStream(url) {
       if (Hls.isSupported()) {
         if (hlsInstance) hlsInstance.destroy();
@@ -412,6 +485,7 @@
       }
     }
 
+    // 5. Renderizar lista de canales
     function renderChannels() {
       const query = searchInput.value.toLowerCase();
       channelGrid.innerHTML = '';
@@ -458,13 +532,11 @@
       });
     }
 
-    // INTERSECTION OBSERVER: Activa el video flotante al hacer scroll fuera del área
+    // Intersection Observer (Video flotante)
     const observer = new IntersectionObserver((entries) => {
-      // Solo activa el modo flotante en pantallas pequeñas (< 900px)
       if (window.innerWidth < 900) {
         const [entry] = entries;
         if (!entry.isIntersecting) {
-          // Guardar dimensiones del reproductor para evitar saltos en la interfaz
           screenPlaceholder.style.height = `${screenWrapper.offsetHeight}px`;
           screenPlaceholder.classList.add('active');
           screenWrapper.classList.add('floating');
@@ -477,7 +549,7 @@
 
     observer.observe(screenPlaceholder);
 
-    // Eventos de Filtro e Inputs
+    // Eventos
     categoryTabs.addEventListener('click', (e) => {
       if (e.target.classList.contains('tab-btn')) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -489,9 +561,8 @@
 
     searchInput.addEventListener('input', renderChannels);
 
-    // Inicialización
-    loadStream(channels[0].url);
-    renderChannels();
+    // Inicializar
+    initApp();
   </script>
 
 </body>
