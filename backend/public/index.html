@@ -28,13 +28,16 @@
       background-color: var(--bg-main);
       color: var(--text-main);
       min-height: 100vh;
-      width: 100vw;
+      width: 100%;
       overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-x: none;
+      -webkit-overflow-scrolling: touch;
     }
 
     /* Layout a Pantalla Completa */
     .tv-app {
-      width: 100vw;
+      width: 100%;
       min-height: 100vh;
       padding: clamp(12px, 2.5vw, 28px);
       display: flex;
@@ -87,12 +90,12 @@
       flex: 1;
     }
 
+    /* Sentinel estable para el reproductor flotante en Android */ 
     .screen-placeholder {
       width: 100%;
-      display: none;
-    }
-    .screen-placeholder.active {
+      height: 1px;
       display: block;
+      pointer-events: none;
     }
 
     /* Contenedor del Reproductor */
@@ -163,24 +166,46 @@
     }
 
     /* ESTILO VIDEO FLOTANTE */
+    /*
+     * Android: floating video stable.
+     * No animation/transform here because fixed + transform + scroll can
+     * cause visual flicker on Chrome/WebView.
+     */
     .screen-wrapper.floating {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 260px;
-      z-index: 999;
+      left: auto;
+      top: auto;
+      bottom: 16px;
+      right: 16px;
+      width: min(260px, calc(100vw - 32px));
+      z-index: 9999;
       border-radius: 14px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 15px var(--accent-glow);
-      animation: floatIn 0.3s ease forwards;
+      animation: none !important;
+      transform: none !important;
+      transition: none !important;
     }
 
     .screen-wrapper.floating .screen-header {
       padding: 4px;
     }
 
-    @keyframes floatIn {
-      from { transform: translateY(50px) scale(0.8); opacity: 0; }
-      to { transform: translateY(0) scale(1); opacity: 1; }
+    /* Sentinel: conserva el espacio original sin display:none */
+    .screen-placeholder {
+      width: 100%;
+      height: 1px;
+      display: block;
+      pointer-events: none;
+    }
+
+    @media (max-width: 899px) {
+      .screen-wrapper.floating video {
+        display: block;
+      }
+
+      .screen-wrapper.floating {
+        will-change: auto;
+      }
     }
 
     /* Sidebar / Contenido */
@@ -555,22 +580,68 @@
       });
     }
 
-    // Observer para activar el reproductor flotante en pantallas pequeñas
-    const observer = new IntersectionObserver((entries) => {
-      if (window.innerWidth < 900) {
-        const [entry] = entries;
-        if (!entry.isIntersecting) {
-          screenPlaceholder.style.height = `${screenWrapper.offsetHeight}px`;
-          screenPlaceholder.classList.add('active');
-          screenWrapper.classList.add('floating');
-        } else {
-          screenPlaceholder.classList.remove('active');
-          screenWrapper.classList.remove('floating');
-        }
-      }
-    }, { threshold: 0.2 });
+    /*
+     * Android scroll fix
+     *
+     * El código anterior observaba el mismo placeholder al que cambiaba
+     * display/height y, además, movía el player a position:fixed. Eso podía
+     * cambiar inmediatamente el resultado del IntersectionObserver y crear
+     * un ciclo: normal -> floating -> normal -> floating, visible como
+     * parpadeo durante el scroll.
+     *
+     * Ahora el placeholder es un sentinel fijo de 1px. Solo se observa si
+     * ese punto está dentro/fuera de la ventana. No modificamos el sentinel
+     * durante el callback y el player flotante no tiene animación.
+     */
+    let isFloating = false;
+    let observer = null;
 
-    observer.observe(screenPlaceholder);
+    function setFloating(enabled) {
+      if (enabled === isFloating) return;
+      isFloating = enabled;
+
+      if (enabled) {
+        screenWrapper.classList.add('floating');
+      } else {
+        screenWrapper.classList.remove('floating');
+      }
+    }
+
+    function setupMobilePlayerObserver() {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+
+      setFloating(false);
+
+      if (window.innerWidth >= 900) return;
+
+      observer = new IntersectionObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+
+        // Una sola transición por cambio real de estado.
+        setFloating(!entry.isIntersecting);
+      }, {
+        threshold: 0,
+        rootMargin: '0px'
+      });
+
+      observer.observe(screenPlaceholder);
+    }
+
+    setupMobilePlayerObserver();
+
+    // Reconfigura solo al cambiar realmente entre móvil/escritorio.
+    let lastMobileState = window.innerWidth < 900;
+    window.addEventListener('resize', () => {
+      const mobileState = window.innerWidth < 900;
+      if (mobileState !== lastMobileState) {
+        lastMobileState = mobileState;
+        setupMobilePlayerObserver();
+      }
+    }, { passive: true });
 
     // Eventos
     categoryTabs.addEventListener('click', (e) => {
