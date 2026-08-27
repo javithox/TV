@@ -291,19 +291,35 @@ app.get('/playlist/:token.m3u', (req, res) => {
 /**
  * Proxy HTTP
  */
+function getProxyTarget(req) {
+  const marker = '/proxy/';
+  const start = req.originalUrl.indexOf(marker);
+  if (start < 0) throw new Error('Ruta de proxy inválida');
+
+  let encodedUrl = req.originalUrl.slice(start + marker.length);
+  encodedUrl = encodedUrl.split('?')[0];
+  let decodedUrl = encodedUrl;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const nextUrl = decodeURIComponent(decodedUrl);
+    if (nextUrl === decodedUrl) break;
+    decodedUrl = nextUrl;
+  }
+
+  return new URL(decodedUrl);
+}
+
 const streamProxy = createProxyMiddleware({
   target: 'http://localhost',
   router(req) {
-    const raw = req.originalUrl.replace(/^\/proxy\//, '');
-    const url = new URL(decodeURIComponent(raw));
+    const url = req.proxyTarget || getProxyTarget(req);
     if (!allowedHosts.has(url.hostname)) {
       throw new Error('Host no permitido');
     }
     return url.origin;
   },
   pathRewrite(pathname, req) {
-    const raw = req.originalUrl.replace(/^\/proxy\//, '');
-    const url = new URL(decodeURIComponent(raw));
+    const url = req.proxyTarget || getProxyTarget(req);
     return `${url.pathname}${url.search}`;
   },
   changeOrigin: true,
@@ -322,13 +338,13 @@ const streamProxy = createProxyMiddleware({
 
 app.use('/proxy', (req, res, next) => {
   try {
-    const raw = req.originalUrl.replace(/^\/proxy\//, '');
-    const url = new URL(decodeURIComponent(raw));
+    const url = getProxyTarget(req);
 
     if (!allowedHosts.has(url.hostname)) {
       return res.status(403).send('Host no permitido');
     }
 
+    req.proxyTarget = url;
     return streamProxy(req, res, next);
   } catch (error) {
     console.error('❌ Proxy:', error.message);

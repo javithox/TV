@@ -1,10 +1,14 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0d12">
   <title>Smart TV Web Player Fullscreen</title>
+
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
   <style>
     :root {
       --bg-main: #0b0d12;
@@ -23,8 +27,17 @@
       padding: 0;
     }
 
+    html {
+      background: var(--bg-main);
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
       min-height: 100vh;
@@ -35,7 +48,6 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    /* Layout a Pantalla Completa */
     .tv-app {
       width: 100%;
       min-height: 100vh;
@@ -43,10 +55,16 @@
       display: flex;
       flex-direction: column;
       gap: clamp(12px, 2vw, 20px);
-      background: radial-gradient(circle at top right, #181d2a 0%, var(--bg-main) 60%);
+      background:
+        radial-gradient(
+          circle at top right,
+          #181d2a 0%,
+          var(--bg-main) 60%
+        );
     }
 
-    /* Buscador Superior */
+    /* Buscador */
+
     .search-box {
       position: relative;
       width: 100%;
@@ -66,6 +84,10 @@
       transition: all 0.3s ease;
     }
 
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
     .search-input:focus {
       border-color: var(--accent);
       background: rgba(255, 255, 255, 0.08);
@@ -79,21 +101,33 @@
       max-width: 760px;
     }
 
-    .source-form .search-input { max-width: none; min-width: 0; }
+    .source-form .search-input {
+      max-width: none;
+      min-width: 0;
+    }
 
     .source-button {
       border: 0;
       border-radius: 12px;
       padding: 0 18px;
+      min-height: 42px;
       color: #fff;
       background: var(--accent);
       font: inherit;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
+      transition: opacity 0.2s ease;
     }
 
-    .source-button:disabled { opacity: 0.6; cursor: wait; }
+    .source-button:hover {
+      opacity: 0.9;
+    }
+
+    .source-button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
 
     .source-status {
       min-height: 18px;
@@ -109,9 +143,11 @@
       width: 16px;
       height: 16px;
       fill: var(--text-muted);
+      pointer-events: none;
     }
 
-    /* Grid Principal */
+    /* Layout */
+
     .main-layout {
       display: grid;
       grid-template-columns: 1fr;
@@ -119,7 +155,8 @@
       flex: 1;
     }
 
-    /* Sentinel estable para el reproductor flotante en Android */ 
+    /* Sentinel */
+
     .screen-placeholder {
       width: 100%;
       height: 1px;
@@ -127,7 +164,8 @@
       pointer-events: none;
     }
 
-    /* Contenedor del Reproductor */
+    /* Reproductor */
+
     .screen-wrapper {
       position: relative;
       border-radius: 20px;
@@ -147,11 +185,16 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       z-index: 2;
       pointer-events: none;
     }
 
     .channel-badge {
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-size: 11px;
       font-weight: 600;
       background: rgba(15, 18, 25, 0.75);
@@ -172,6 +215,7 @@
       padding: 4px 10px;
       border-radius: 20px;
       box-shadow: 0 0 12px var(--accent-glow);
+      flex-shrink: 0;
     }
 
     .live-dot {
@@ -183,8 +227,15 @@
     }
 
     @keyframes pulse {
-      from { opacity: 1; transform: scale(1); }
-      to { opacity: 0.2; transform: scale(0.7); }
+      from {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      to {
+        opacity: 0.2;
+        transform: scale(0.7);
+      }
     }
 
     video {
@@ -192,52 +243,40 @@
       height: auto;
       display: block;
       aspect-ratio: 16 / 9;
+      background: #000;
     }
 
-    /* ESTILO VIDEO FLOTANTE */
-    /*
-     * Android: floating video stable.
-     * No animation/transform here because fixed + transform + scroll can
-     * cause visual flicker on Chrome/WebView.
-     */
+    /* Video flotante */
+
     .screen-wrapper.floating {
       position: fixed;
       left: auto;
       top: auto;
       bottom: 16px;
       right: 16px;
-      width: min(260px, calc(100vw - 32px));
+      width: min(300px, calc(100vw - 32px));
       z-index: 9999;
       border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 15px var(--accent-glow);
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.9),
+        0 0 15px var(--accent-glow);
       animation: none !important;
       transform: none !important;
       transition: none !important;
     }
 
     .screen-wrapper.floating .screen-header {
-      padding: 4px;
+      top: 8px;
+      left: 8px;
+      right: 8px;
     }
 
-    /* Sentinel: conserva el espacio original sin display:none */
-    .screen-placeholder {
-      width: 100%;
-      height: 1px;
+    .screen-wrapper.floating video {
       display: block;
-      pointer-events: none;
     }
 
-    @media (max-width: 899px) {
-      .screen-wrapper.floating video {
-        display: block;
-      }
+    /* Sidebar */
 
-      .screen-wrapper.floating {
-        will-change: auto;
-      }
-    }
-
-    /* Sidebar / Contenido */
     .sidebar-section {
       display: flex;
       flex-direction: column;
@@ -245,7 +284,8 @@
       min-width: 0;
     }
 
-    /* Filtro de Categorías */
+    /* Categorías */
+
     .categories-tabs {
       display: flex;
       gap: 8px;
@@ -253,7 +293,10 @@
       padding-bottom: 4px;
       scrollbar-width: none;
     }
-    .categories-tabs::-webkit-scrollbar { display: none; }
+
+    .categories-tabs::-webkit-scrollbar {
+      display: none;
+    }
 
     .tab-btn {
       background: rgba(255, 255, 255, 0.05);
@@ -268,13 +311,17 @@
       transition: all 0.25s ease;
     }
 
-    .tab-btn.active, .tab-btn:hover {
+    .tab-btn.active,
+    .tab-btn:hover,
+    .tab-btn:focus-visible {
       background: var(--text-main);
       color: #000;
       border-color: var(--text-main);
+      outline: none;
     }
 
-    /* Lista de Canales */
+    /* Lista */
+
     .channel-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -287,7 +334,10 @@
       scrollbar-color: var(--border) transparent;
     }
 
-    .channel-grid::-webkit-scrollbar { width: 5px; }
+    .channel-grid::-webkit-scrollbar {
+      width: 5px;
+    }
+
     .channel-grid::-webkit-scrollbar-thumb {
       background: var(--border);
       border-radius: 999px;
@@ -321,7 +371,10 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
     }
 
     .channel-card:hover {
@@ -331,7 +384,12 @@
     }
 
     .channel-card.active {
-      background: linear-gradient(90deg, rgba(255, 42, 95, 0.15), transparent);
+      background:
+        linear-gradient(
+          90deg,
+          rgba(255, 42, 95, 0.15),
+          transparent
+        );
       border-color: var(--accent);
     }
 
@@ -408,6 +466,7 @@
         grid-template-columns: 1.8fr 1fr;
         align-items: start;
       }
+
       .channel-grid {
         max-height: calc(100vh - 160px);
         padding-right: 4px;
@@ -421,389 +480,1291 @@
     }
 
     @media (max-width: 480px) {
-      .source-form { flex-direction: column; }
-      .source-button { min-height: 42px; }
+      .source-form {
+        flex-direction: column;
+      }
+
+      .source-button {
+        width: 100%;
+      }
+
+      .screen-wrapper.floating {
+        width: min(260px, calc(100vw - 32px));
+      }
     }
   </style>
+
 </head>
+
 <body>
 
   <div class="tv-app">
-    <!-- Buscador Superior -->
-    <div class="search-box">
-      <svg class="search-icon" viewBox="0 0 24 24">
-        <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-      </svg>
-      <input type="text" id="search-input" class="search-input" placeholder="Buscar canal...">
-    </div>
 
-    <form class="source-form" id="source-form">
-      <input type="url" id="source-url" class="search-input" placeholder="URL de tu lista M3U o M3U8" required>
-      <button class="source-button" type="submit">Agregar lista</button>
-    </form>
-    <div class="source-status" id="source-status" role="status" aria-live="polite"></div>
+```
+<!-- Buscador -->
+<div class="search-box">
+  <svg
+    class="search-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path
+      d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
+    />
+  </svg>
 
-    <!-- Layout Principal -->
-    <div class="main-layout">
-      
-      <!-- Contenedor del Reproductor -->
-      <div>
-        <div id="screen-placeholder" class="screen-placeholder"></div>
-        <div id="screen-wrapper" class="screen-wrapper">
-          <div class="screen-header">
-            <span class="channel-badge" id="channel-title">Cargando Listas de Canales desde el servidor...</span>
-            <div class="live-badge">
-              <span class="live-dot"></span> EN VIVO
-            </div>
-          </div>
-          <video id="video" controls autoplay muted playsinline preload="metadata"></video>
+  <input
+    type="text"
+    id="search-input"
+    class="search-input"
+    placeholder="Buscar canal..."
+    autocomplete="off"
+  >
+</div>
+
+<!-- Cargar M3U externa -->
+<form class="source-form" id="source-form">
+  <input
+    type="url"
+    id="source-url"
+    class="search-input"
+    placeholder="URL de tu lista M3U o M3U8"
+    required
+  >
+
+  <button
+    class="source-button"
+    type="submit"
+    id="source-button"
+  >
+    Agregar lista
+  </button>
+</form>
+
+<div
+  class="source-status"
+  id="source-status"
+  role="status"
+  aria-live="polite"
+></div>
+
+<!-- Layout -->
+<div class="main-layout">
+
+  <!-- Reproductor -->
+  <div>
+    <div
+      id="screen-placeholder"
+      class="screen-placeholder"
+    ></div>
+
+    <div
+      id="screen-wrapper"
+      class="screen-wrapper"
+    >
+      <div class="screen-header">
+
+        <span
+          class="channel-badge"
+          id="channel-title"
+        >
+          Cargando canales...
+        </span>
+
+        <div class="live-badge">
+          <span class="live-dot"></span>
+          EN VIVO
         </div>
+
       </div>
 
-      <!-- Sidebar con Filtros y Canales -->
-      <div class="sidebar-section">
-                <div class="categories-tabs" id="category-tabs">
-          <button type="button" class="tab-btn active" data-category="TODOS">TODOS</button>
-        </div>
-
-        <button type="button" id="scroll-toggle" class="scroll-control" aria-pressed="false">
-          Pausar auto-scroll
-        </button>
-
-        <div class="channel-grid" id="channel-grid"></div>
-        <div class="no-results" id="no-results">No se encontraron los canales de la lista</div>
-      </div>
-
+      <video
+        id="video"
+        controls
+        autoplay
+        muted
+        playsinline
+        preload="metadata"
+      ></video>
     </div>
   </div>
 
+  <!-- Sidebar -->
+  <div class="sidebar-section">
+
+    <div
+      class="categories-tabs"
+      id="category-tabs"
+    >
+      <button
+        type="button"
+        class="tab-btn active"
+        data-category="TODOS"
+      >
+        TODOS
+      </button>
+    </div>
+
+    <button
+      type="button"
+      id="scroll-toggle"
+      class="scroll-control"
+      aria-pressed="false"
+    >
+      Pausar auto-scroll
+    </button>
+
+    <div
+      class="channel-grid"
+      id="channel-grid"
+    ></div>
+
+    <div
+      class="no-results"
+      id="no-results"
+    >
+      No se encontraron canales.
+    </div>
+
+  </div>
+</div>
+```
+
+  </div>
+
   <script>
-    'use strict';
+    "use strict";
 
-    // Apunta directamente a la ruta M3U servida por tu backend
-    const PLAYLIST_URL = '/playlist/tv_chile_2026_token_seguro_8f4Kp92x.m3u';
-    const USER_TOKEN = 'tv_chile_2026_token_seguro_8f4Kp92x';
+    /*
+     * CONFIGURACIÓN
+     *
+     * PLAYLIST_URL:
+     * Playlist M3U que tu backend sirve automáticamente.
+     *
+     * USER_TOKEN:
+     * Token utilizado por /api/sources.
+     */
 
-    const video = document.getElementById('video');
-    const screenWrapper = document.getElementById('screen-wrapper');
-    const screenPlaceholder = document.getElementById('screen-placeholder');
-    const channelTitle = document.getElementById('channel-title');
-    const channelGrid = document.getElementById('channel-grid');
-    const searchInput = document.getElementById('search-input');
-    const categoryTabs = document.getElementById('category-tabs');
-    const noResults = document.getElementById('no-results');
-    const scrollToggle = document.getElementById('scroll-toggle');
-    const sourceForm = document.getElementById('source-form');
-    const sourceUrl = document.getElementById('source-url');
-    const sourceButton = sourceForm.querySelector('button');
-    const sourceStatus = document.getElementById('source-status');
+    const PLAYLIST_URL =
+      "/playlist/tv_chile_2026_token_seguro_8f4Kp92x.m3u";
+
+    const USER_TOKEN =
+      "tv_chile_2026_token_seguro_8f4Kp92x";
+
+
+    /* Elementos */
+
+    const video =
+      document.getElementById("video");
+
+    const screenWrapper =
+      document.getElementById("screen-wrapper");
+
+    const screenPlaceholder =
+      document.getElementById("screen-placeholder");
+
+    const channelTitle =
+      document.getElementById("channel-title");
+
+    const channelGrid =
+      document.getElementById("channel-grid");
+
+    const searchInput =
+      document.getElementById("search-input");
+
+    const categoryTabs =
+      document.getElementById("category-tabs");
+
+    const noResults =
+      document.getElementById("no-results");
+
+    const scrollToggle =
+      document.getElementById("scroll-toggle");
+
+    const sourceForm =
+      document.getElementById("source-form");
+
+    const sourceUrl =
+      document.getElementById("source-url");
+
+    const sourceButton =
+      document.getElementById("source-button");
+
+    const sourceStatus =
+      document.getElementById("source-status");
+
+
+    /* Estado */
 
     let channels = [];
+
     let hlsInstance = null;
+
     let activeChannelId = null;
-        let selectedCategory = "TODOS";
+
+    let selectedCategory = "TODOS";
+
     let autoScrollEnabled = true;
+
     let autoScrollFrame = 0;
+
     let lastScrollTime = 0;
 
+    let isFloating = false;
+
+    let observer = null;
+
+
+    /* Auto-scroll */
+
     function updateScrollButton() {
-      scrollToggle.textContent = autoScrollEnabled ? 'Pausar auto-scroll' : 'Reanudar auto-scroll';
-      scrollToggle.setAttribute('aria-pressed', String(!autoScrollEnabled));
+      scrollToggle.textContent =
+        autoScrollEnabled
+          ? "Pausar auto-scroll"
+          : "Reanudar auto-scroll";
+
+      scrollToggle.setAttribute(
+        "aria-pressed",
+        String(!autoScrollEnabled)
+      );
     }
+
 
     function autoScroll(timestamp) {
-      if (timestamp - lastScrollTime > 40 && autoScrollEnabled) {
-        const atEnd = channelGrid.scrollTop + channelGrid.clientHeight >= channelGrid.scrollHeight - 2;
-        channelGrid.scrollTop = atEnd ? 0 : channelGrid.scrollTop + 1;
+
+      if (
+        timestamp - lastScrollTime > 40 &&
+        autoScrollEnabled
+      ) {
+
+        const atEnd =
+          channelGrid.scrollTop +
+          channelGrid.clientHeight >=
+          channelGrid.scrollHeight - 2;
+
+        channelGrid.scrollTop =
+          atEnd
+            ? 0
+            : channelGrid.scrollTop + 1;
+
         lastScrollTime = timestamp;
       }
-      autoScrollFrame = window.requestAnimationFrame(autoScroll);
+
+      autoScrollFrame =
+        window.requestAnimationFrame(autoScroll);
     }
 
-    // Escapa texto dinámico antes de insertarlo en HTML.
+
+    /* Seguridad */
+
     function escapeHtml(value) {
-      return String(value ?? '').replace(/[&<>"']/g, char => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      }[char]));
+
+      return String(value ?? "").replace(
+        /[&<>"']/g,
+        char => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        }[char])
+      );
     }
 
-    // Parser M3U
+
+    /* Parser M3U */
+
     function parseM3U(text) {
+
       const out = [];
+
       let info = {};
-      for (const raw of text.replace(/^\uFEFF/, '').split(/\r?\n/)) {
+
+      const lines =
+        String(text)
+          .replace(/^\uFEFF/, "")
+          .split(/\r?\n/);
+
+
+      for (const raw of lines) {
+
         const line = raw.trim();
-        if (!line) continue;
-        if (line.toUpperCase().startsWith('#EXTINF')) {
-          const comma = line.indexOf(',');
-          const meta = comma < 0 ? line : line.slice(0, comma);
-          info = {
-            title: comma < 0 ? 'Canal sin nombre' : line.slice(comma + 1).trim(),
-            logo: meta.match(/tvg-logo="([^"]*)"/i)?.[1] || '',
-            group: meta.match(/group-title="([^"]*)"/i)?.[1] || 'GENERAL'
-          };
+
+        if (!line) {
           continue;
         }
+
+
+        /*
+         * EXTINF
+         *
+         * Ejemplo:
+         *
+         * #EXTINF:-1 tvg-logo="logo.jpg"
+         * group-title="ANIME",DragonBall Super EP 02
+         */
+
+        if (
+          line
+            .toUpperCase()
+            .startsWith("#EXTINF")
+        ) {
+
+          const comma =
+            line.indexOf(",");
+
+          const meta =
+            comma < 0
+              ? line
+              : line.slice(0, comma);
+
+          const title =
+            comma < 0
+              ? "Canal sin nombre"
+              : line.slice(comma + 1).trim();
+
+
+          const logoMatch =
+            meta.match(
+              /tvg-logo="([^"]*)"/i
+            );
+
+          const groupMatch =
+            meta.match(
+              /group-title="([^"]*)"/i
+            );
+
+
+          info = {
+            title:
+              title || "Canal sin nombre",
+
+            logo:
+              logoMatch
+                ? logoMatch[1]
+                : "",
+
+            group:
+              groupMatch
+                ? groupMatch[1]
+                : "GENERAL"
+          };
+
+          continue;
+        }
+
+
+        /*
+         * Ignorar comentarios M3U
+         */
+
+        if (line.startsWith("#")) {
+          continue;
+        }
+
+
+        /*
+         * Aceptar URLs HTTP/HTTPS.
+         *
+         * Esto permite:
+         * .m3u8
+         * .mp4
+         * .ts
+         * streams HTTP
+         */
+
         if (/^https?:\/\//i.test(line)) {
+
           out.push({
-            id: `channel-${out.length + 1}`,
-            title: info.title || `Canal ${out.length + 1}`,
-            logo: info.logo,
-            group: info.group,
-            url: line
+
+            id:
+              `channel-${out.length + 1}`,
+
+            title:
+              info.title ||
+              `Canal ${out.length + 1}`,
+
+            logo:
+              info.logo || "",
+
+            group:
+              info.group || "GENERAL",
+
+            url:
+              line
           });
+
+
           info = {};
         }
       }
+
+
       return out;
     }
 
-    // Cargar playlist desde Render
-    async function initApp() {
-      try {
-        channelTitle.textContent = "Cargando canales...";
 
-        const response = await fetch(PLAYLIST_URL, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const m3uText = await response.text();
-        channels = parseM3U(m3uText);
+    /* Destruir reproductor HLS */
 
-        if (channels.length > 0) {
-          buildCategoryTabs();
-          activeChannelId = channels[0].id;
-          playChannel(channels[0]);
-          renderChannels();
-        } else {
-          channelTitle.textContent = "Lista vacía";
-        }
-      } catch (e) {
-        console.error("Error al cargar la playlist:", e);
-        channelTitle.textContent = "Error al cargar la lista de canales";
-      }
-    }
-
-    // Generar pestañas de categorías
-    function buildCategoryTabs() {
-      const groups = [...new Set(channels.map(c => (c.group || 'GENERAL').trim()))].sort((a, b) => a.localeCompare(b, 'es'));
-      const categories = ['TODOS', ...groups];
-      
-      categoryTabs.innerHTML = categories.map(cat => 
-        `<button type="button" class="tab-btn ${cat === selectedCategory ? 'active' : ''}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
-      ).join('');
-    }
-
-    // Reproductor HLS
-    function playChannel(channel) {
-      if (!channel) return;
-      activeChannelId = channel.id;
-      channelTitle.textContent = channel.title;
+    function destroyHls() {
 
       if (hlsInstance) {
-        hlsInstance.destroy();
+
+        try {
+          hlsInstance.destroy();
+        } catch (error) {
+          console.warn(
+            "Error destruyendo HLS:",
+            error
+          );
+        }
+
         hlsInstance = null;
       }
+    }
+
+
+    /* Reproducir canal */
+
+    function playChannel(channel) {
+
+      if (!channel) {
+        return;
+      }
+
+
+      activeChannelId =
+        channel.id;
+
+      channelTitle.textContent =
+        channel.title;
+
+
+      destroyHls();
+
+
       video.pause();
-      video.removeAttribute('src');
+
+      video.removeAttribute("src");
+
       video.load();
 
-      const url = channel.playbackUrl || channel.url;
 
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      const url =
+        channel.playbackUrl ||
+        channel.url;
+
+
+      if (!url) {
+
+        channelTitle.textContent =
+          "URL no disponible";
+
+        return;
+      }
+
+
+      /*
+       * Safari / iOS / navegadores con
+       * soporte HLS nativo.
+       */
+
+      if (
+        video.canPlayType(
+          "application/vnd.apple.mpegurl"
+        )
+      ) {
+
         video.src = url;
+
         video.play().catch(() => {});
+
         return;
       }
 
-      if (window.Hls && Hls.isSupported()) {
-        hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true, maxBufferLength: 30 });
+
+      /*
+       * HLS.js
+       */
+
+      if (
+        window.Hls &&
+        Hls.isSupported()
+      ) {
+
+        hlsInstance =
+          new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            maxBufferLength: 30
+          });
+
+
         hlsInstance.loadSource(url);
+
         hlsInstance.attachMedia(video);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-        hlsInstance.on(Hls.Events.ERROR, (_, data) => {
-          if (!data.fatal) return;
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hlsInstance.startLoad();
-          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hlsInstance.recoverMediaError();
-          else channelTitle.textContent = 'Canal no disponible';
-        });
+
+
+        hlsInstance.on(
+          Hls.Events.MANIFEST_PARSED,
+          () => {
+            video
+              .play()
+              .catch(() => {});
+          }
+        );
+
+
+        hlsInstance.on(
+          Hls.Events.ERROR,
+          (_event, data) => {
+
+            if (!data.fatal) {
+              return;
+            }
+
+
+            console.error(
+              "Error HLS:",
+              data
+            );
+
+
+            if (
+              data.type ===
+              Hls.ErrorTypes.NETWORK_ERROR
+            ) {
+
+              channelTitle.textContent =
+                "Reconectando...";
+
+              try {
+                hlsInstance.startLoad();
+              } catch (_) {}
+
+              return;
+            }
+
+
+            if (
+              data.type ===
+              Hls.ErrorTypes.MEDIA_ERROR
+            ) {
+
+              try {
+                hlsInstance.recoverMediaError();
+              } catch (_) {}
+
+              return;
+            }
+
+
+            channelTitle.textContent =
+              "Canal no disponible";
+
+            destroyHls();
+          }
+        );
+
         return;
       }
+
+
+      /*
+       * Fallback para MP4 y otros formatos
+       * soportados directamente por <video>.
+       */
 
       video.src = url;
+
       video.play().catch(() => {});
     }
 
-    // Renderizar lista de canales
-    function renderChannels() {
-      const query = searchInput.value.toLowerCase().trim();
-      channelGrid.innerHTML = '';
 
-      const filtered = channels.filter(c => {
-        const matchesCategory = selectedCategory === "TODOS" || (c.group || 'GENERAL').trim() === selectedCategory;
-        const matchesSearch = `${c.title} ${c.group}`.toLowerCase().includes(query);
-        return matchesCategory && matchesSearch;
-      });
+    /* Crear categorías */
+
+    function buildCategoryTabs() {
+
+      const groups = [
+        ...new Set(
+          channels.map(
+            channel =>
+              (channel.group || "GENERAL")
+                .trim()
+          )
+        )
+      ]
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          a.localeCompare(b, "es")
+      );
+
+
+      const categories =
+        ["TODOS", ...groups];
+
+
+      categoryTabs.innerHTML =
+        categories
+          .map(
+            category => `
+              <button
+                type="button"
+                class="tab-btn ${
+                  category === selectedCategory
+                    ? "active"
+                    : ""
+                }"
+                data-category="${escapeHtml(category)}"
+              >
+                ${escapeHtml(category)}
+              </button>
+            `
+          )
+          .join("");
+    }
+
+
+    /* Renderizar canales */
+
+    function renderChannels() {
+
+      const query =
+        searchInput.value
+          .toLowerCase()
+          .trim();
+
+
+      channelGrid.innerHTML = "";
+
+
+      const filtered =
+        channels.filter(channel => {
+
+          const group =
+            (channel.group || "GENERAL")
+              .trim();
+
+
+          const matchesCategory =
+            selectedCategory === "TODOS" ||
+            group === selectedCategory;
+
+
+          const searchText =
+            `${channel.title} ${group}`
+              .toLowerCase();
+
+
+          const matchesSearch =
+            searchText.includes(query);
+
+
+          return (
+            matchesCategory &&
+            matchesSearch
+          );
+        });
+
 
       if (filtered.length === 0) {
-        noResults.style.display = 'block';
+
+        noResults.style.display =
+          "block";
+
         return;
       }
-      noResults.style.display = 'none';
+
+
+      noResults.style.display =
+        "none";
+
 
       filtered.forEach(channel => {
-        const card = document.createElement('div');
-        card.className = `channel-card ${channel.id === activeChannelId ? 'active' : ''}`;
-        card.setAttribute('role', 'button');
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('aria-label', `Reproducir ${channel.title}`);
-        
-        const logoHTML = channel.logo
-          ? `<img src="${escapeHtml(channel.logo)}" alt="" loading="lazy" onerror="this.parentElement.textContent='TV'">`
-          : 'TV';
+
+        const card =
+          document.createElement("div");
+
+
+        card.className =
+          `channel-card ${
+            channel.id === activeChannelId
+              ? "active"
+              : ""
+          }`;
+
+
+        card.setAttribute(
+          "role",
+          "button"
+        );
+
+        card.setAttribute(
+          "tabindex",
+          "0"
+        );
+
+        card.setAttribute(
+          "aria-label",
+          `Reproducir ${channel.title}`
+        );
+
+
+        let logoHTML = "TV";
+
+
+        if (channel.logo) {
+
+          logoHTML = `
+            <img
+              src="${escapeHtml(channel.logo)}"
+              alt=""
+              loading="lazy"
+            >
+          `;
+        }
+
 
         card.innerHTML = `
           <div class="channel-info">
-            <div class="channel-icon">${logoHTML}</div>
-            <div>
-              <div class="channel-name">${escapeHtml(channel.title)}</div>
-              <div class="channel-cat">${escapeHtml(channel.group || 'General')}</div>
+
+            <div class="channel-icon">
+              ${logoHTML}
             </div>
+
+            <div>
+
+              <div class="channel-name">
+                ${escapeHtml(channel.title)}
+              </div>
+
+              <div class="channel-cat">
+                ${escapeHtml(
+                  channel.group || "General"
+                )}
+              </div>
+
+            </div>
+
           </div>
+
           <div class="play-btn">
-            <svg width="10" height="10" viewBox="0 0 24 24">
+
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path d="M8 5v14l11-7z"/>
             </svg>
+
           </div>
         `;
 
-        const selectChannel = () => {
-          playChannel(channel);
-          renderChannels();
-        };
-        card.addEventListener('click', selectChannel);
-        card.addEventListener('keydown', event => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            selectChannel();
+
+        const img =
+          card.querySelector("img");
+
+
+        if (img) {
+
+          img.addEventListener(
+            "error",
+            () => {
+              const parent =
+                img.parentElement;
+
+              if (parent) {
+                parent.textContent =
+                  "TV";
+              }
+            },
+            { once: true }
+          );
+        }
+
+
+        const selectChannel =
+          () => {
+
+            playChannel(channel);
+
+            renderChannels();
+          };
+
+
+        card.addEventListener(
+          "click",
+          selectChannel
+        );
+
+
+        card.addEventListener(
+          "keydown",
+          event => {
+
+            if (
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+
+              event.preventDefault();
+
+              selectChannel();
+            }
           }
-        });
+        );
+
 
         channelGrid.appendChild(card);
       });
     }
 
-    /*
-     * Android scroll fix
-     *
-     * El código anterior observaba el mismo placeholder al que cambiaba
-     * display/height y, además, movía el player a position:fixed. Eso podía
-     * cambiar inmediatamente el resultado del IntersectionObserver y crear
-     * un ciclo: normal -> floating -> normal -> floating, visible como
-     * parpadeo durante el scroll.
-     *
-     * Ahora el placeholder es un sentinel fijo de 1px. Solo se observa si
-     * ese punto está dentro/fuera de la ventana. No modificamos el sentinel
-     * durante el callback y el player flotante no tiene animación.
-     */
-    let isFloating = false;
-    let observer = null;
 
-    function setFloating(enabled) {
-      if (enabled === isFloating) return;
-      isFloating = enabled;
+    /* Cargar playlist */
 
-      if (enabled) {
-        screenWrapper.classList.add('floating');
-      } else {
-        screenWrapper.classList.remove('floating');
+    async function initApp() {
+
+      try {
+
+        channelTitle.textContent =
+          "Cargando canales...";
+
+
+        const response =
+          await fetch(
+            PLAYLIST_URL,
+            {
+              cache: "no-store"
+            }
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            `HTTP ${response.status}`
+          );
+        }
+
+
+        const m3uText =
+          await response.text();
+
+
+        channels =
+          parseM3U(m3uText);
+
+
+        if (channels.length > 0) {
+
+          selectedCategory =
+            "TODOS";
+
+          buildCategoryTabs();
+
+
+          activeChannelId =
+            channels[0].id;
+
+
+          renderChannels();
+
+
+          playChannel(
+            channels[0]
+          );
+
+        } else {
+
+          channelTitle.textContent =
+            "Lista vacía";
+
+          noResults.style.display =
+            "block";
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Error al cargar playlist:",
+          error
+        );
+
+
+        channelTitle.textContent =
+          "Error al cargar la lista";
+
+
+        sourceStatus.textContent =
+          `No se pudo cargar la playlist: ${
+            error.message
+          }`;
       }
     }
 
+
+    /* Player flotante Android */
+
+    function setFloating(enabled) {
+
+      if (enabled === isFloating) {
+        return;
+      }
+
+
+      isFloating =
+        enabled;
+
+
+      if (enabled) {
+
+        screenWrapper.classList.add(
+          "floating"
+        );
+
+      } else {
+
+        screenWrapper.classList.remove(
+          "floating"
+        );
+      }
+    }
+
+
     function setupMobilePlayerObserver() {
+
       if (observer) {
+
         observer.disconnect();
+
         observer = null;
       }
 
+
       setFloating(false);
 
-            if (window.innerWidth >= 900 || !('IntersectionObserver' in window)) return;
 
-      observer = new IntersectionObserver((entries) => {
-        const entry = entries[0];
-        if (!entry) return;
+      if (
+        window.innerWidth >= 900 ||
+        !("IntersectionObserver" in window)
+      ) {
 
-        // Una sola transición por cambio real de estado.
-        setFloating(!entry.isIntersecting);
-      }, {
-        threshold: 0,
-        rootMargin: '0px'
-      });
+        return;
+      }
 
-      observer.observe(screenPlaceholder);
+
+      observer =
+        new IntersectionObserver(
+          entries => {
+
+            const entry =
+              entries[0];
+
+
+            if (!entry) {
+              return;
+            }
+
+
+            setFloating(
+              !entry.isIntersecting
+            );
+          },
+          {
+            threshold: 0,
+            rootMargin: "0px"
+          }
+        );
+
+
+      observer.observe(
+        screenPlaceholder
+      );
     }
+
 
     setupMobilePlayerObserver();
 
-    // Reconfigura solo al cambiar realmente entre móvil/escritorio.
-    let lastMobileState = window.innerWidth < 900;
-    window.addEventListener('resize', () => {
-      const mobileState = window.innerWidth < 900;
-      if (mobileState !== lastMobileState) {
-        lastMobileState = mobileState;
-        setupMobilePlayerObserver();
-      }
-    }, { passive: true });
 
-    // Eventos
-    categoryTabs.addEventListener('click', (e) => {
-      if (e.target.classList.contains('tab-btn')) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        e.target.classList.add('active');
-        selectedCategory = e.target.getAttribute('data-category') || 'TODOS';
+    let lastMobileState =
+      window.innerWidth < 900;
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        const mobileState =
+          window.innerWidth < 900;
+
+
+        if (
+          mobileState !==
+          lastMobileState
+        ) {
+
+          lastMobileState =
+            mobileState;
+
+          setupMobilePlayerObserver();
+        }
+      },
+      {
+        passive: true
+      }
+    );
+
+
+    /* Categorías */
+
+    categoryTabs.addEventListener(
+      "click",
+      event => {
+
+        const button =
+          event.target.closest(
+            ".tab-btn"
+          );
+
+
+        if (!button) {
+          return;
+        }
+
+
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach(btn =>
+            btn.classList.remove(
+              "active"
+            )
+          );
+
+
+        button.classList.add(
+          "active"
+        );
+
+
+        selectedCategory =
+          button.getAttribute(
+            "data-category"
+          ) || "TODOS";
+
+
         renderChannels();
       }
-    });
+    );
 
-    searchInput.addEventListener('input', renderChannels);
 
-    sourceForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      sourceButton.disabled = true;
-      sourceStatus.textContent = 'Cargando lista...';
+    /* Búsqueda */
 
-      try {
-        const response = await fetch('/api/sources', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-user-token': USER_TOKEN },
-          body: JSON.stringify({ url: sourceUrl.value.trim() })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'No se pudo cargar la lista');
+    searchInput.addEventListener(
+      "input",
+      renderChannels
+    );
 
-        channels = data.channels || channels;
-        selectedCategory = 'TODOS';
-        buildCategoryTabs();
-        renderChannels();
-        sourceStatus.textContent = `${data.message}. Total: ${data.total} canales.`;
-        sourceUrl.value = '';
-      } catch (error) {
-        sourceStatus.textContent = error.message;
-      } finally {
-        sourceButton.disabled = false;
+
+    /* Agregar playlist externa */
+
+    sourceForm.addEventListener(
+      "submit",
+      async event => {
+
+        event.preventDefault();
+
+
+        const url =
+          sourceUrl.value.trim();
+
+
+        if (!url) {
+          return;
+        }
+
+
+        sourceButton.disabled =
+          true;
+
+
+        sourceStatus.textContent =
+          "Cargando lista...";
+
+
+        try {
+
+          const response =
+            await fetch(
+              "/api/sources",
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+
+                  "x-user-token":
+                    USER_TOKEN
+                },
+
+                body:
+                  JSON.stringify({
+                    url
+                  })
+              }
+            );
+
+
+          let data;
+
+
+          try {
+
+            data =
+              await response.json();
+
+          } catch (_) {
+
+            throw new Error(
+              `Respuesta inválida del servidor (HTTP ${response.status})`
+            );
+          }
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              data.error ||
+              "No se pudo cargar la lista"
+            );
+          }
+
+
+          if (
+            !Array.isArray(
+              data.channels
+            )
+          ) {
+
+            throw new Error(
+              "El servidor no devolvió canales válidos"
+            );
+          }
+
+
+          channels =
+            data.channels;
+
+
+          selectedCategory =
+            "TODOS";
+
+
+          activeChannelId =
+            channels.length
+              ? channels[0].id
+              : null;
+
+
+          buildCategoryTabs();
+
+          renderChannels();
+
+
+          if (channels.length) {
+
+            playChannel(
+              channels[0]
+            );
+          }
+
+
+          sourceStatus.textContent =
+            `${data.message || "Lista cargada"}. Total: ${
+              data.total ??
+              channels.length
+            } canales.`;
+
+
+          sourceUrl.value = "";
+
+
+        } catch (error) {
+
+          console.error(
+            "Error agregando playlist:",
+            error
+          );
+
+
+          sourceStatus.textContent =
+            error.message ||
+            "No se pudo cargar la lista";
+
+        } finally {
+
+          sourceButton.disabled =
+            false;
+        }
       }
-    });
+    );
 
-    scrollToggle.addEventListener('click', () => {
-      autoScrollEnabled = !autoScrollEnabled;
-      updateScrollButton();
-    });
+
+    /* Auto-scroll */
+
+    scrollToggle.addEventListener(
+      "click",
+      () => {
+
+        autoScrollEnabled =
+          !autoScrollEnabled;
+
+        updateScrollButton();
+      }
+    );
+
+
+    /*
+     * Si el usuario toca/usa la lista,
+     * pausamos temporalmente el auto-scroll
+     * para evitar que interfiera con la
+     * navegación táctil.
+     */
+
+    channelGrid.addEventListener(
+      "pointerdown",
+      () => {
+
+        if (autoScrollEnabled) {
+
+          autoScrollEnabled =
+            false;
+
+          updateScrollButton();
+        }
+      },
+      {
+        passive: true
+      }
+    );
+
+
+    /* Inicialización */
 
     updateScrollButton();
-    autoScrollFrame = window.requestAnimationFrame(autoScroll);
 
-    // Inicialización
+
+    autoScrollFrame =
+      window.requestAnimationFrame(
+        autoScroll
+      );
+
+
     initApp();
+
   </script>
 
 </body>
