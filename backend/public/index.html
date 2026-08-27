@@ -250,6 +250,37 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: 10px;
+      max-height: min(58vh, 620px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .channel-grid::-webkit-scrollbar { width: 5px; }
+    .channel-grid::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 999px;
+    }
+
+    .scroll-control {
+      align-self: flex-start;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .scroll-control:hover,
+    .scroll-control:focus-visible {
+      border-color: var(--accent);
+      outline: none;
     }
 
     .channel-card {
@@ -350,11 +381,8 @@
       }
       .channel-grid {
         max-height: calc(100vh - 160px);
-        overflow-y: auto;
         padding-right: 4px;
       }
-      .channel-grid::-webkit-scrollbar { width: 4px; }
-      .channel-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     }
 
     @media (min-width: 600px) and (max-width: 899px) {
@@ -394,9 +422,13 @@
 
       <!-- Sidebar con Filtros y Canales -->
       <div class="sidebar-section">
-        <div class="categories-tabs" id="category-tabs">
-          <button class="tab-btn active" data-category="TODOS">TODOS</button>
+                <div class="categories-tabs" id="category-tabs">
+          <button type="button" class="tab-btn active" data-category="TODOS">TODOS</button>
         </div>
+
+        <button type="button" id="scroll-toggle" class="scroll-control" aria-pressed="false">
+          Pausar auto-scroll
+        </button>
 
         <div class="channel-grid" id="channel-grid"></div>
         <div class="no-results" id="no-results">No se encontraron los canales de la lista</div>
@@ -419,11 +451,36 @@
     const searchInput = document.getElementById('search-input');
     const categoryTabs = document.getElementById('category-tabs');
     const noResults = document.getElementById('no-results');
+    const scrollToggle = document.getElementById('scroll-toggle');
 
     let channels = [];
     let hlsInstance = null;
     let activeChannelId = null;
-    let selectedCategory = "TODOS";
+        let selectedCategory = "TODOS";
+    let autoScrollEnabled = true;
+    let autoScrollFrame = 0;
+    let lastScrollTime = 0;
+
+    function updateScrollButton() {
+      scrollToggle.textContent = autoScrollEnabled ? 'Pausar auto-scroll' : 'Reanudar auto-scroll';
+      scrollToggle.setAttribute('aria-pressed', String(!autoScrollEnabled));
+    }
+
+    function autoScroll(timestamp) {
+      if (timestamp - lastScrollTime > 40 && autoScrollEnabled) {
+        const atEnd = channelGrid.scrollTop + channelGrid.clientHeight >= channelGrid.scrollHeight - 2;
+        channelGrid.scrollTop = atEnd ? 0 : channelGrid.scrollTop + 1;
+        lastScrollTime = timestamp;
+      }
+      autoScrollFrame = window.requestAnimationFrame(autoScroll);
+    }
+
+    // Escapa texto dinámico antes de insertarlo en HTML.
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[char]));
+    }
 
     // Parser M3U
     function parseM3U(text) {
@@ -487,7 +544,7 @@
       const categories = ['TODOS', ...groups];
       
       categoryTabs.innerHTML = categories.map(cat => 
-        `<button class="tab-btn ${cat === selectedCategory ? 'active' : ''}" data-category="${cat}">${cat}</button>`
+        `<button type="button" class="tab-btn ${cat === selectedCategory ? 'active' : ''}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
       ).join('');
     }
 
@@ -551,17 +608,20 @@
       filtered.forEach(channel => {
         const card = document.createElement('div');
         card.className = `channel-card ${channel.id === activeChannelId ? 'active' : ''}`;
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `Reproducir ${channel.title}`);
         
-        const logoHTML = channel.logo 
-          ? `<img src="${channel.logo}" alt="" onerror="this.parentElement.innerHTML='TV'">`
+        const logoHTML = channel.logo
+          ? `<img src="${escapeHtml(channel.logo)}" alt="" loading="lazy" onerror="this.parentElement.textContent='TV'">`
           : 'TV';
 
         card.innerHTML = `
           <div class="channel-info">
             <div class="channel-icon">${logoHTML}</div>
             <div>
-              <div class="channel-name">${channel.title}</div>
-              <div class="channel-cat">${channel.group || 'General'}</div>
+              <div class="channel-name">${escapeHtml(channel.title)}</div>
+              <div class="channel-cat">${escapeHtml(channel.group || 'General')}</div>
             </div>
           </div>
           <div class="play-btn">
@@ -571,9 +631,16 @@
           </div>
         `;
 
-        card.addEventListener('click', () => {
+        const selectChannel = () => {
           playChannel(channel);
           renderChannels();
+        };
+        card.addEventListener('click', selectChannel);
+        card.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            selectChannel();
+          }
         });
 
         channelGrid.appendChild(card);
@@ -615,7 +682,7 @@
 
       setFloating(false);
 
-      if (window.innerWidth >= 900) return;
+            if (window.innerWidth >= 900 || !('IntersectionObserver' in window)) return;
 
       observer = new IntersectionObserver((entries) => {
         const entry = entries[0];
@@ -648,12 +715,20 @@
       if (e.target.classList.contains('tab-btn')) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         e.target.classList.add('active');
-        selectedCategory = e.target.getAttribute('data-category');
+        selectedCategory = e.target.getAttribute('data-category') || 'TODOS';
         renderChannels();
       }
     });
 
     searchInput.addEventListener('input', renderChannels);
+
+    scrollToggle.addEventListener('click', () => {
+      autoScrollEnabled = !autoScrollEnabled;
+      updateScrollButton();
+    });
+
+    updateScrollButton();
+    autoScrollFrame = window.requestAnimationFrame(autoScroll);
 
     // Inicialización
     initApp();
