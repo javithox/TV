@@ -1,0 +1,54 @@
+# Project TODO
+
+- [x] Auditar el scaffold actual y definir el modelo de fuentes, playlists y canales.
+- [x] Añadir tablas para fuentes y canales personales vinculadas al usuario.
+- [x] Generar y aplicar la migración de base de datos.
+- [x] Añadir consultas y procedimientos tRPC protegidos para listar, crear y eliminar contenido personal.
+- [x] Construir navbar responsive con Inicio, búsqueda, añadir contenido y cuenta.
+- [x] Implementar autenticación con inicio de sesión, estado de cuenta y llamada a registrarse cuando no haya sesión.
+- [x] Implementar búsqueda personalizada por nombre, categoría y fuente.
+- [x] Implementar formulario autenticado para URL directa, M3U8 y playlist M3U.
+- [x] Analizar playlists M3U/M3U8 y mostrar canales/episodios reproducibles.
+- [x] Integrar reproducción HLS y estados de carga, error y contenido vacío.
+- [x] Aplicar estética cyberpunk de alto contraste, HUD y responsive design.
+- [x] Escribir pruebas Vitest para parsing, autorización y persistencia.
+- [x] Validar tipos, pruebas, build y experiencia responsive.
+- [x] Preparar checkpoint final del proyecto.
+- [x] Completar el análisis M3U/M3U8 remoto con rutas relativas y validación de URLs.
+- [x] Añadir estados visibles de carga y error para biblioteca y reproductor.
+- [x] Probar que los procedimientos de contenido rechazan solicitudes sin sesión.
+- [x] Probar el aislamiento por usuario de creación, listado y eliminación de fuentes.
+- [x] Cubrir content.add sin sesión en las pruebas de autorización.
+- [x] Cubrir content.add con usuario autenticado y verificar que la creación usa su identificador.
+- [x] Añadir controles personalizados de reproducción y pausa.
+- [x] Añadir control de volumen y silenciado.
+- [x] Añadir pantalla completa con soporte de teclado y móvil.
+- [x] Añadir selector de calidad para niveles HLS disponibles y opción automática.
+- [x] Validar controles en escritorio, móvil y build final.
+- [x] Añadir fallback WebKit para pantalla completa en iOS y sincronizar sus eventos.
+- [x] Validar visualmente los controles personalizados en viewport móvil.
+- [x] Documentar la revisión móvil de los controles y corregir cualquier desbordamiento detectado (390×844: navbar, reproductor y biblioteca sin solapamientos; controles se muestran al seleccionar una señal).
+- [x] Añadir una prueba reproducible del contrato responsive del reproductor y navbar.
+- [x] Añadir una prueba UI reproducible que verifique controles y navbar en móvil/escritorio sin solapamientos.
+- [x] Añadir tabla de preferencias por usuario para canal y calidad.
+- [x] Crear procedimientos tRPC protegidos para leer y guardar preferencias.
+- [x] Restaurar el último canal y calidad al iniciar sesión.
+- [x] Guardar canal y calidad durante la reproducción.
+- [x] Añadir pruebas de preferencias y preparar ZIP del proyecto.
+- [x] Empaquetar el proyecto actualizado en un ZIP descargable y verificable.
+- [x] Comparar la arquitectura del nuevo TV.zip con la arquitectura full-stack actual.
+- [x] Mapear servicios, modelos, rutas y flujo de reproducción del ZIP al proyecto actual.
+- [x] Integrar el modelo arquitectónico conservando el estilo cyberpunk, navbar, reproducción y preferencias.
+- [x] Validar la integración con pruebas, tipos, build y revisión visual.
+- [x] Separar la lógica HLS y preferencias del reproductor en un hook dedicado.
+- [x] Separar la vista del reproductor en un componente presentacional dedicado.
+- [x] Documentar el mapeo de arquitectura ZIP → cliente web, backend y reproducción.
+- [x] Configurar Vitest para incluir y ejecutar pruebas del cliente.
+- [x] Añadir validación automatizada verificable de layout y controles.
+- [x] Garantizar desde useHlsPlayer el guardado del último canal seleccionado junto con su calidad.
+- [x] Añadir una prueba de renderizado real de PlayerSurface para sus controles.
+- [x] Ejecutar la suite con la prueba de renderizado y validar la integración final.
+- [x] Guardar desde useHlsPlayer la calidad activa real al cambiar de canal y cubrirlo con prueba.
+- [x] Incluir archivos `client/**/*.test.tsx` y `client/**/*.spec.tsx` en Vitest.
+- [x] Ejecutar nuevamente la suite verificando que PlayerSurface.test.tsx se ejecute.
+- [x] Probar el comportamiento real de useHlsPlayer al cambiar calidad y canal.
