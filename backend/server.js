@@ -38,6 +38,7 @@ const LOCAL_LISTA_DIR = path.join(__dirname, 'src', 'lista');
 
 let canales = [];
 const allowedHosts = new Set();
+const customSources = new Set();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -179,6 +180,51 @@ async function cargarCanales() {
   console.log(`🌐 HOSTS PERMITIDOS: ${allowedHosts.size}`);
 }
 
+function validatePlaylistUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+      throw new Error('Solo se permiten URLs HTTP o HTTPS públicas');
+    }
+
+    const blockedHosts = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
+    if (blockedHosts.has(url.hostname.toLowerCase()) || url.hostname.endsWith('.local')) {
+      throw new Error('El host de la lista no está permitido');
+    }
+
+    return url.toString();
+  } catch (error) {
+    throw new Error(error.message || 'URL inválida');
+  }
+}
+
+async function addCustomSource(sourceUrl) {
+  const url = validatePlaylistUrl(sourceUrl);
+  const response = await axios.get(url, {
+    timeout: 30000,
+    responseType: 'text',
+    maxContentLength: 100 * 1024 * 1024,
+    headers: { 'User-Agent': 'Mozilla/5.0 TV-App/1.0' }
+  });
+  const parsed = parseM3U(response.data, url);
+
+  if (customSources.has(url)) {
+    return { url, added: 0, total: canales.length };
+  }
+
+  customSources.add(url);
+  const existing = new Set(canales.map(channel => `${channel.title}|${channel.url}`));
+  const newChannels = parsed.filter(channel => {
+    const key = `${channel.title}|${channel.url}`;
+    if (existing.has(key)) return false;
+    existing.add(key);
+    return true;
+  });
+  canales.push(...newChannels);
+
+  return { url, added: newChannels.length, total: canales.length };
+}
+
 /**
  * Autenticación Middleware
  */
@@ -298,5 +344,22 @@ app.listen(PORT, '0.0.0.0', async () => {
     await cargarCanales();
   } catch (error) {
     console.error('❌ Error cargando canales:', error.message);
+  }
+});
+
+app.post('/api/sources', requireToken, async (req, res) => {
+  try {
+    const result = await addCustomSource(req.body?.url);
+    return res.status(result.added ? 201 : 200).json({
+      success: true,
+      message: result.added
+        ? `Se agregaron ${result.added} canales`
+        : 'La fuente ya estaba agregada o no contiene canales nuevos',
+      ...result,
+      channels: buildPlaylist(req)
+    });
+  } catch (error) {
+    console.error(`❌ Fuente personalizada: ${error.message}`);
+    return res.status(400).json({ error: `No se pudo cargar la lista: ${error.message}` });
   }
 });

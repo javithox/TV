@@ -1,8 +1,8 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, SafeAreaView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Button, SafeAreaView, StyleSheet, Text, TextInput, View} from 'react-native';
 import Video from 'react-native-video';
 import ChannelItem from '../components/ChannelItem';
-import {getChannels} from '../services/api';
+import {addSource, getChannels} from '../services/api';
 
 export default function HomeScreen() {
   const [channels, setChannels] = useState([]);
@@ -10,6 +10,26 @@ export default function HomeScreen() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [sourceStatus, setSourceStatus] = useState('');
+  const [addingSource, setAddingSource] = useState(false);
+
+  const handleAddSource = async () => {
+    if (!sourceUrl.trim()) return;
+    setAddingSource(true);
+    setSourceStatus('Cargando lista...');
+    try {
+      const data = await addSource(sourceUrl.trim());
+      setChannels(data.channels ?? channels);
+      setSelected(data.channels?.[0] ?? selected);
+      setSourceUrl('');
+      setSourceStatus(`${data.message}. Total: ${data.total} canales.`);
+    } catch (err) {
+      setSourceStatus(err.message || 'No se pudo cargar la lista.');
+    } finally {
+      setAddingSource(false);
+    }
+  };
 
   useEffect(() => {
     getChannels()
@@ -36,6 +56,17 @@ export default function HomeScreen() {
           placeholderTextColor="#888"
           style={styles.input}
         />
+        <TextInput
+          value={sourceUrl}
+          onChangeText={setSourceUrl}
+          placeholder="URL de lista M3U/M3U8"
+          placeholderTextColor="#888"
+          autoCapitalize="none"
+          keyboardType="url"
+          style={styles.input}
+        />
+        <Button title={addingSource ? 'Cargando...' : 'Agregar lista'} onPress={handleAddSource} disabled={addingSource} />
+        {sourceStatus ? <Text style={styles.status}>{sourceStatus}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {filtered.map(channel => (
           <ChannelItem
@@ -76,5 +107,6 @@ const styles = StyleSheet.create({
   video:{width:'100%', flex:1, backgroundColor:'#000'},
   empty:{color:'#aaa', textAlign:'center', marginTop:40},
   error:{color:'#ff8a80', marginBottom:10},
+  status:{color:'#9ad7ff', marginVertical:10},
   center:{flex:1, alignItems:'center', justifyContent:'center', backgroundColor:'#101010'},
 });

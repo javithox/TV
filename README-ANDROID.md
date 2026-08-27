@@ -43,3 +43,9 @@ El backend usa por defecto la playlist de Chile de IPTV-org:
 `https://iptv-org.github.io/iptv/countries/cl.m3u`
 
 También puedes cambiarla mediante `M3U_URLS` en `.env`/`.env.local`.
+
+## Listas personalizadas
+
+Desde la interfaz web o la aplicación móvil se puede introducir una URL HTTP/HTTPS de una playlist `.m3u` o `.m3u8` y pulsar **Agregar lista**. El backend descarga la lista, incorpora sus canales y los expone mediante el mismo proxy de reproducción.
+
+Las listas personalizadas se mantienen en memoria y se pierden al reiniciar el backend. Para que una lista se cargue siempre, añádela a `M3U_URLS`.

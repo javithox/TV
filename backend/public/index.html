@@ -72,6 +72,35 @@
       box-shadow: 0 0 15px var(--accent-glow);
     }
 
+    .source-form {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 760px;
+    }
+
+    .source-form .search-input { max-width: none; min-width: 0; }
+
+    .source-button {
+      border: 0;
+      border-radius: 12px;
+      padding: 0 18px;
+      color: #fff;
+      background: var(--accent);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .source-button:disabled { opacity: 0.6; cursor: wait; }
+
+    .source-status {
+      min-height: 18px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
     .search-icon {
       position: absolute;
       left: 14px;
@@ -390,6 +419,11 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
+
+    @media (max-width: 480px) {
+      .source-form { flex-direction: column; }
+      .source-button { min-height: 42px; }
+    }
   </style>
 </head>
 <body>
@@ -402,6 +436,12 @@
       </svg>
       <input type="text" id="search-input" class="search-input" placeholder="Buscar canal...">
     </div>
+
+    <form class="source-form" id="source-form">
+      <input type="url" id="source-url" class="search-input" placeholder="URL de tu lista M3U o M3U8" required>
+      <button class="source-button" type="submit">Agregar lista</button>
+    </form>
+    <div class="source-status" id="source-status" role="status" aria-live="polite"></div>
 
     <!-- Layout Principal -->
     <div class="main-layout">
@@ -442,6 +482,7 @@
 
     // Apunta directamente a la ruta M3U servida por tu backend
     const PLAYLIST_URL = '/playlist/tv_chile_2026_token_seguro_8f4Kp92x.m3u';
+    const USER_TOKEN = 'tv_chile_2026_token_seguro_8f4Kp92x';
 
     const video = document.getElementById('video');
     const screenWrapper = document.getElementById('screen-wrapper');
@@ -452,6 +493,10 @@
     const categoryTabs = document.getElementById('category-tabs');
     const noResults = document.getElementById('no-results');
     const scrollToggle = document.getElementById('scroll-toggle');
+    const sourceForm = document.getElementById('source-form');
+    const sourceUrl = document.getElementById('source-url');
+    const sourceButton = sourceForm.querySelector('button');
+    const sourceStatus = document.getElementById('source-status');
 
     let channels = [];
     let hlsInstance = null;
@@ -562,7 +607,7 @@
       video.removeAttribute('src');
       video.load();
 
-      const url = channel.url;
+      const url = channel.playbackUrl || channel.url;
 
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
@@ -721,6 +766,33 @@
     });
 
     searchInput.addEventListener('input', renderChannels);
+
+    sourceForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      sourceButton.disabled = true;
+      sourceStatus.textContent = 'Cargando lista...';
+
+      try {
+        const response = await fetch('/api/sources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-token': USER_TOKEN },
+          body: JSON.stringify({ url: sourceUrl.value.trim() })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'No se pudo cargar la lista');
+
+        channels = data.channels || channels;
+        selectedCategory = 'TODOS';
+        buildCategoryTabs();
+        renderChannels();
+        sourceStatus.textContent = `${data.message}. Total: ${data.total} canales.`;
+        sourceUrl.value = '';
+      } catch (error) {
+        sourceStatus.textContent = error.message;
+      } finally {
+        sourceButton.disabled = false;
+      }
+    });
 
     scrollToggle.addEventListener('click', () => {
       autoScrollEnabled = !autoScrollEnabled;
