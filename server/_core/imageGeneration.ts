@@ -15,7 +15,7 @@
  *     }]
  *   });
  */
-import { storagePut } from "server/storage";
+import { storagePut } from "../storage";
 import { ENV } from "./env";
 
 // Default model for generated sites. "MODEL_GPT_IMAGE_2" is the forge images.v1
@@ -44,10 +44,10 @@ export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
   if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
+    throw new Error("MANUS_API_URL is not configured");
   }
   if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
+    throw new Error("MANUS_API_KEY is not configured");
   }
 
   // Build the full URL by appending the service path to the base URL
@@ -73,7 +73,7 @@ export async function generateImage(
     },
     body: JSON.stringify({
       prompt: options.prompt,
-      original_images: options.originalImages || [],
+      originalImages: options.originalImages || [],
       model,
       ...(quality ? { quality } : {}),
     }),
@@ -87,13 +87,20 @@ export async function generateImage(
   }
 
   const result = (await response.json()) as {
-    image: {
-      b64Json: string;
-      mimeType: string;
-    };
+    image?: { b64Json?: string; url?: string; mimeType?: string };
+    error?: unknown;
   };
-  const base64Data = result.image.b64Json;
-  const buffer = Buffer.from(base64Data, "base64");
+  if (result.error || !result.image) throw new Error("Image service did not return an image");
+  let buffer: Buffer;
+  if (result.image.b64Json) {
+    buffer = Buffer.from(result.image.b64Json, "base64");
+  } else if (result.image.url) {
+    const imageResponse = await fetch(result.image.url);
+    if (!imageResponse.ok) throw new Error(`Image download failed (${imageResponse.status})`);
+    buffer = Buffer.from(await imageResponse.arrayBuffer());
+  } else {
+    throw new Error("Image service returned no downloadable bytes");
+  }
 
   // Save to S3
   const { url } = await storagePut(
@@ -123,10 +130,10 @@ export type ListImageModelsResponse = {
  */
 export async function listImageModels(): Promise<ListImageModelsResponse> {
   if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
+    throw new Error("MANUS_API_URL is not configured");
   }
   if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
+    throw new Error("MANUS_API_KEY is not configured");
   }
 
   const baseUrl = ENV.forgeApiUrl.endsWith("/")

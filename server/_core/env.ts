@@ -1,10 +1,12 @@
+// Platform values are read at use time. See the Webdev service/authentication skills.
 export const ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
-  databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
-  isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  get appId() { return process.env.MANUS_PROJECT_ID ?? ""; },
+  get cookieSecret() { return process.env.MANUS_JWT_SECRET ?? ""; },
+  get databaseUrl() { return process.env.DATABASE_URL ?? ""; },
+  get oAuthServerUrl() { return process.env.MANUS_OAUTH_API_URL ?? ""; },
+  // Preserve the legacy hint when supplied; otherwise roles remain application data.
+  get ownerOpenId() { return process.env.OWNER_OPEN_ID ?? ""; },
+  get isProduction() { return process.env.NODE_ENV === "production"; },
+  get forgeApiUrl() { return process.env.MANUS_API_URL ?? ""; },
+  get forgeApiKey() { return process.env.MANUS_API_KEY ?? ""; },
 };

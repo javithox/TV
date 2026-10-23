@@ -10,33 +10,48 @@ function getQueryParam(req: Request, key: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function returnToAppWithError(res: Response, code: string) {
+  res.redirect(302, `/?authError=${encodeURIComponent(code)}`);
+}
+
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
+    const providerError = getQueryParam(req, "error");
 
+    if (providerError) {
+      returnToAppWithError(res, "cancelled");
+      return;
+    }
     if (!code || !state) {
-      res.status(400).json({ error: "code and state are required" });
+      returnToAppWithError(res, "incomplete");
       return;
     }
 
-    // CSRF guard: the nonce in `state` must match the one-time cookie that
-    // startLogin set in the browser that began this login. An attacker can
-    // forge `state`, but cannot plant this cookie in the victim's browser.
+    // Bind the OAuth state to the browser that began the login to prevent CSRF.
     const { nonce } = decodeOAuthState(state);
     const expectedNonce = parseCookieHeader(req.headers.cookie ?? "")[OAUTH_STATE_COOKIE];
     if (!nonce || nonce !== expectedNonce) {
-      res.status(403).json({ error: "invalid oauth state" });
+      res.clearCookie(OAUTH_STATE_COOKIE, {
+        path: "/",
+        secure: true,
+        sameSite: "none",
+      });
+      returnToAppWithError(res, "invalid-state");
       return;
     }
-    res.clearCookie(OAUTH_STATE_COOKIE, { path: "/", secure: true, sameSite: "none" });
+    res.clearCookie(OAUTH_STATE_COOKIE, {
+      path: "/",
+      secure: true,
+      sameSite: "none",
+    });
 
     try {
       const tokenResponse = await sdk.exchangeCodeForToken(code, state);
       const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
-
       if (!userInfo.openId) {
-        res.status(400).json({ error: "openId missing from user info" });
+        returnToAppWithError(res, "provider");
         return;
       }
 
@@ -52,14 +67,18 @@ export function registerOAuthRoutes(app: Express) {
         name: userInfo.name || "",
         expiresInMs: ONE_YEAR_MS,
       });
-
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-
+      res.cookie(COOKIE_NAME, sessionToken, {
+        ...getSessionCookieOptions(req),
+        maxAge: ONE_YEAR_MS,
+      });
+      // Always return to this fixed in-app path; never trust a redirect from the request.
       res.redirect(302, "/");
     } catch (error) {
-      console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      console.error(
+        "[OAuth] Callback failed",
+        error instanceof Error ? error.message : "unknown error",
+      );
+      returnToAppWithError(res, "provider");
     }
   });
 }

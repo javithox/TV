@@ -3,30 +3,43 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { contentItems, contentSources, InsertContentItem, InsertContentSource, InsertUser, userPreferences, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+// Instancia de la base de datos
+export const db = drizzle(process.env.DATABASE_URL || "mysql://root:password@localhost:3306/tv_db");
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
-  }
-  return _db;
+  return db;
+}
+
+export async function getUserByEmail(email: string) {
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0];
+}
+
+export async function getUserById(id: number) {
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getUserByOpenId(openId: string) {
+  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result[0];
+}
+
+export async function createUser(data: { email: string; name: string; passwordHash: string; loginMethod?: string }) {
+  const result = await db.insert(users).values({
+    email: data.email,
+    name: data.name,
+    passwordHash: data.passwordHash,
+    loginMethod: data.loginMethod || "email",
+    lastSignedIn: new Date(),
+  });
+  const insertId = Number(result[0].insertId);
+  return getUserById(insertId);
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
-  }
-
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
   }
 
   try {
@@ -77,22 +90,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
-export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
-  return result.length > 0 ? result[0] : undefined;
-}
-
 export async function getContentForUser(userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is not available");
-
   return db.select({
     id: contentItems.id,
     sourceId: contentItems.sourceId,
@@ -111,8 +109,6 @@ export async function getContentForUser(userId: number) {
 }
 
 export async function getSourcesForUser(userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is not available");
   return db.select().from(contentSources).where(eq(contentSources.userId, userId)).orderBy(desc(contentSources.createdAt));
 }
 
@@ -121,9 +117,6 @@ export async function createContentForUser(
   source: Omit<InsertContentSource, "userId">,
   items: Array<Omit<InsertContentItem, "userId" | "sourceId">>,
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is not available");
-
   return db.transaction(async tx => {
     const sourceResult = await tx.insert(contentSources).values({ ...source, userId });
     const sourceId = Number(sourceResult[0].insertId);
@@ -135,23 +128,16 @@ export async function createContentForUser(
 }
 
 export async function deleteSourceForUser(userId: number, sourceId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is not available");
   const result = await db.delete(contentSources).where(and(eq(contentSources.id, sourceId), eq(contentSources.userId, userId)));
   return Number(result[0].affectedRows) > 0;
 }
 
 export async function getPreferencesForUser(userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is not available");
   const rows = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
   return rows[0] ?? { lastContentItemId: null, preferredQuality: "auto" };
 }
 
 export async function savePreferencesForUser(userId: number, preferences: { lastContentItemId: number | null; preferredQuality: string }) {
-  const db = await getDb();
-  if (!db) throw new Error("Database is not available");
-
   if (preferences.lastContentItemId !== null) {
     const ownedItem = await db.select({ id: contentItems.id })
       .from(contentItems)
