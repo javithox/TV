@@ -27,11 +27,12 @@ export function useAuth() {
   });
 
   return {
-    user: meQuery.data,
+    user: meQuery.data ?? null,
     isLoading: meQuery.isLoading,
     isAuthenticated: !!meQuery.data,
     login: loginMutation.mutateAsync,
     register: registerMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
+    refresh: () => meQuery.refetch(),
   };
 }

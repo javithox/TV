@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import AuthModal from "@/components/AuthModal";
 import { toast } from "sonner";
 import ChannelItem from "@/components/ChannelItem";
 import { filterChannels, resolveInitialChannel, sourceLabels, type ContentItem, type SourceType } from "@/services/api";
@@ -11,20 +11,13 @@ import {
   ExternalLink,
   FilePlus2,
   LogIn,
-  Play,
-  Pause,
+  Radio,
   Search,
   ShieldCheck,
-  Settings2,
   Trash2,
   Upload,
-  Volume2,
-  VolumeX,
-  Maximize2,
-  Minimize2,
   UserCircle2,
   X,
-  Zap,
 } from "lucide-react";
 
 export default function Home() {
@@ -36,27 +29,7 @@ export default function Home() {
   const [selected, setSelected] = useState<ContentItem | null>(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const utils = trpc.useUtils();
-
-  useEffect(() => {
-    const authError = new URLSearchParams(window.location.search).get("authError");
-    if (!authError) return;
-    const messages: Record<string, string> = {
-      cancelled: "El acceso se canceló. Puedes volver a intentarlo cuando quieras.",
-      incomplete: "No se completó el acceso. Inténtalo de nuevo.",
-      "invalid-state": "No pudimos validar el acceso. Vuelve a iniciar sesión.",
-      provider: "No se pudo completar el acceso con tu cuenta Manus.",
-    };
-    toast.error(messages[authError] ?? "Ocurrió un error de autenticación. Inténtalo de nuevo.");
-    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash}`);
-  }, []);
-
-  const startAuthentication = () => {
-    try {
-      startLogin();
-    } catch {
-      toast.error("El inicio de sesión no está disponible en este entorno.");
-    }
-  };
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const contentQuery = trpc.content.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -107,14 +80,10 @@ export default function Home() {
     if (selected && !content.some((item) => item.id === selected.id)) setSelected(filtered[0] ?? content[0] ?? null);
   }, [content, contentQuery.isLoading, filtered, isAuthenticated, preferencesQuery.data, preferencesQuery.isLoading, selected]);
 
-
-
-
-
   const handleAdd = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isAuthenticated) {
-      startAuthentication();
+      setShowAuthModal(true);
       return;
     }
     addMutation.mutate({
@@ -138,7 +107,7 @@ export default function Home() {
       <nav className="neon-nav sticky top-0 z-40 border-b border-white/10 bg-[#05070b]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-7">
           <a href="#inicio" className="brand-mark flex shrink-0 items-center gap-3" aria-label="NEXUS TV inicio">
-            <span className="brand-icon"><img src="/nexus-logo.png" alt="" aria-hidden="true" className="h-[26px] w-[26px] object-contain" /></span>
+            <span className="brand-icon"><Radio size={21} /></span>
             <span><b>NEXUS</b><small>TV // PERSONAL</small></span>
           </a>
           <div className="order-3 flex w-full items-center gap-6 overflow-x-auto pb-1 text-[10px] font-bold tracking-[0.2em] text-slate-400 md:order-none md:w-auto md:overflow-visible md:pb-0 md:text-[11px] md:tracking-[0.24em]">
@@ -154,7 +123,7 @@ export default function Home() {
                 <button className="icon-button" title="Cerrar sesión" onClick={handleLogout}><UserCircle2 size={20} /></button>
               </>
             ) : (
-              <button className="neon-button cyan" onClick={startAuthentication}><LogIn size={16} /> INICIAR SESIÓN</button>
+              <button className="neon-button cyan" onClick={() => setShowAuthModal(true)}><LogIn size={16} /> INICIAR SESIÓN</button>
             )}
           </div>
         </div>
@@ -172,8 +141,8 @@ export default function Home() {
 
         {!isAuthenticated && !authLoading && (
           <section className="login-banner mb-8 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-            <div className="flex items-start gap-4"><ShieldCheck className="mt-1 text-[#ff2bd6]" size={26} /><div><p className="font-bold tracking-wide text-white">INICIA SESIÓN O CREA TU CUENTA</p><p className="mt-1 text-sm text-slate-400">Continúa con Manus para guardar tus fuentes. Si aún no tienes cuenta, podrás crearla en la siguiente pantalla.</p></div></div>
-            <button className="neon-button pink" onClick={startAuthentication}><LogIn size={16} /> CONTINUAR CON MANUS</button>
+            <div className="flex items-start gap-4"><ShieldCheck className="mt-1 text-[#ff2bd6]" size={26} /><div><p className="font-bold tracking-wide text-white">INICIA SESIÓN O CREA TU CUENTA</p><p className="mt-1 text-sm text-slate-400">Accede con tu correo o regístrate para guardar tus fuentes y sincronizar tu biblioteca personal.</p></div></div>
+            <button className="neon-button pink" onClick={() => setShowAuthModal(true)}><LogIn size={16} /> INICIAR SESIÓN / REGISTRO</button>
           </section>
         )}
 
@@ -200,6 +169,8 @@ export default function Home() {
 
         <footer className="mt-14 flex flex-col justify-between gap-3 border-t border-white/10 pt-5 text-[10px] tracking-[0.18em] text-slate-600 sm:flex-row"><span>NEXUS TV // PERSONAL MEDIA OS</span><span>BUILD 2026.08 // <a className="text-cyan-400" href="#inicio">VOLVER ARRIBA <ExternalLink size={11} className="inline" /></a></span></footer>
       </main>
+
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 }

@@ -1,5 +1,3 @@
-import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -14,11 +12,12 @@ import {
   getPreferencesForUser, 
   getSourcesForUser, 
   getUserByEmail, 
-  savePreferencesForUser 
+  savePreferencesForUser,
+  updateLastSignedIn
 } from "./db";
 import { parsePlaylist } from "./contentParser";
 
-const JWT_SECRET = process.env.JWT_SECRET || "clave_secreta_desarrollo";
+const JWT_SECRET = process.env.JWT_SECRET || "clave_secreta_desarrollo_nexus_tv";
 
 export const appRouter = router({
   system: systemRouter,
@@ -46,13 +45,12 @@ export const appRouter = router({
           email: input.email,
           name: input.name,
           passwordHash,
-          loginMethod: "email",
         });
 
         if (!newUser) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "No se pudo crear el usuario.",
+            message: "Error al crear la cuenta de usuario.",
           });
         }
 
@@ -86,7 +84,7 @@ export const appRouter = router({
         if (!user || !user.passwordHash) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "Credenciales incorrectas.",
+            message: "Credenciales de acceso incorrectas.",
           });
         }
 
@@ -94,9 +92,11 @@ export const appRouter = router({
         if (!isValidPassword) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "Credenciales incorrectas.",
+            message: "Credenciales de acceso incorrectas.",
           });
         }
+
+        await updateLastSignedIn(user.id);
 
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
           expiresIn: "7d",
@@ -119,12 +119,8 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
 
     logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       ctx.res.clearCookie("auth_token");
-      return {
-        success: true,
-      } as const;
+      return { success: true };
     }),
   }),
 
